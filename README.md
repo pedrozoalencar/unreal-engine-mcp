@@ -1,43 +1,73 @@
-## Update 02/14/2026
+## Update 03/25/2026
+---
+## Flop MCP
+
+One URL, one API key. If your AI tool supports MCP, it can inspect, search, and build inside your running Unreal Editor right now. Works with **Cursor, Claude Code, Windsurf, Cline, VS Code Copilot, OpenClaw**, and any other MCP client.
+
+### Quick Setup (Remote MCP)
+
+The fastest way to get Unreal Engine tools in your IDE is the hosted **Flop MCP** at [flopperam.com/mcp](https://flopperam.com/mcp). No local server, no Python install — just a URL and an API key.
+
+1. **Get an API key** at [flopperam.com/account](https://flopperam.com/account)
+2. **Install the Unreal plugin in your project** — see [flopperam.com/docs](https://flopperam.com/docs). Go to the Installation tab for instructions.
+3. **Add the config to your IDE:**
+
+**Cursor** — `.cursor/mcp.json` (project) or `~/.cursor/mcp.json` (global):
+```json
+{
+  "mcpServers": {
+    "flopperam-unreal": {
+      "url": "https://agent.flopperam.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+**Claude Code** — run in your terminal:
+```bash
+claude mcp add -H "Authorization: Bearer YOUR_API_KEY" --transport http flopperam-unreal https://agent.flopperam.com/mcp
+```
+
+**Cline / Local LLMs** (Ollama, LM Studio, etc.):
+```json
+{
+  "mcpServers": {
+    "flopperam-unreal": {
+      "type": "streamableHttp",
+      "url": "https://agent.flopperam.com/mcp",
+      "headers": {
+        "Authorization": "Bearer YOUR_API_KEY"
+      }
+    }
+  }
+}
+```
+
+That's it — verify the server shows as connected in your IDE and start prompting.
 
 ---
 
-This repository contains the **MCP (Model Context Protocol) server** for Unreal Engine, a powerful tool for controlling Unreal through AI clients like Claude, Cursor, and other MCP Hosts.
+## The Flop Agent — [flopperam.com](https://flopperam.com/)
 
-We've also built **The Flop Agent**, a fully autonomous AI agent that runs inside Unreal and goes far beyond the MCP server with full Blueprint editing, world building, and chat directly in the editor.
+The Flop MCP gives your IDE data. **The Flop Agent** is a fully autonomous AI that lives inside Unreal Engine — it plans multi-step workflows, writes and executes code, recovers from errors, and iterates until the job is done.
 
-## FLop Agent v0.7 Now Released - [https://flopperam.com/](https://flopperam.com/)
+- **Dynamic workflows** — decomposes complex requests into steps and adapts when something goes wrong
+- **Unreal-native reasoning** — tuned prompts, specialized routing, deep knowledge of UE APIs and Blueprints
+- **Full Blueprint creation and editing** — create new Blueprints, add variables/components/events/functions, update graph logic, compile and validate
+- **World building** — creates materials, places actors, builds structures, and verifies as it goes
+- **Code execution** — executes commands directly inside the editor — spawning actors, editing Blueprints, building levels
+- **Multiple AI models** — routes to the best model per task (Opus for reasoning, Flash for lookups)
+- **Chat inside Unreal** — embedded browser panel, no window switching
+- **Text/image to 3D** — three quality tiers (Good, High Quality, Very High Quality)
 
-### FULL BLUEPRINT CREATION AND EDITING
-Full Blueprint creation and modification is now available inside the Unreal Editor. The agent goes beyond analysis and directly builds and edits Blueprint logic from natural language. You describe what you want. The agent handles structure, nodes, connections, and verification.
-
-**You can:**
-- Create new Blueprints from scratch
-- Add or modify variables, components, events, and functions
-- Update graph logic and node connections
-- Expand existing systems without manually wiring everything
-- Automatically compile and validate changes after edits
-
-The agent analyzes the Blueprint, plans the edits, executes them in the editor, then compiles to confirm everything works. Blueprint iteration speed increases dramatically when you remove manual node wiring from the loop. This is the first iteration of our Blueprint modification, more improvements are in progress.
+Supports Unreal Engine 5.5, 5.6, and 5.7. Full docs at [flopperam.com/docs](https://flopperam.com/docs).
 
 <img width="800" alt="Flop AI creating a health system in BP_MyPlayer2 from a natural language prompt" src="assets/blueprint_modification2.png" />
 
 <img width="800" alt="Flop AI building a full combat system in BP_Combat99 with health, armor, stamina, combo, and more" src="assets/blueprint_modification.png" />
-
-### CHAT RIGHT INSIDE UNREAL
-The agent runs in an embedded browser directly in the Unreal Editor. Open the FlopAI panel and chat while you work on your scene—no switching windows.
-
-### UNREAL VERSION SUPPORT
-v0.7 supports Unreal Engine 5.5, 5.6, and 5.7.
-
-### BUILDING AND WORLD CREATION
-The agent executes complex multi-step builds: creating materials, placing actors, building structures, and verifying as it goes. With premium reasoning models (e.g. Claude Opus 4.5), you can drive full environments from a single prompt.
-
-### 3D GENERATION QUALITY TIERS
-Text and image to 3D has three quality levels: **Good** (fast iteration), **High Quality** (balanced), and **Very High Quality** (maximum detail, longer generation).
-
-### DOCUMENTATION
-Full docs are at [flopperam.com/docs](https://flopperam.com/docs)—installation, agent modes, 3D generation, Blueprint editing, and examples. Make sure you're running the latest Flop AI plugin inside Unreal to use these features.
 
 ---
 
