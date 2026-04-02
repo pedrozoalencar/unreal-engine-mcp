@@ -105,14 +105,12 @@ TSharedPtr<FJsonObject> FUnrealMCPTransactionCommands::HandleUndo(const TSharedP
 		return MakeErrorResponse(TEXT("GEditor is not available"));
 	}
 
-	bool bSuccess = GEditor->UndoTransaction();
+	bool bUndid = GEditor->UndoTransaction();
 
 	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
-	Result->SetBoolField(TEXT("success"), bSuccess);
-	if (!bSuccess)
-	{
-		Result->SetStringField(TEXT("message"), TEXT("Nothing to undo"));
-	}
+	Result->SetBoolField(TEXT("success"), true);  // Always success - "nothing to undo" is not an error
+	Result->SetBoolField(TEXT("undid"), bUndid);
+	Result->SetStringField(TEXT("message"), bUndid ? TEXT("Undo successful") : TEXT("Nothing to undo"));
 	return Result;
 }
 
@@ -126,13 +124,11 @@ TSharedPtr<FJsonObject> FUnrealMCPTransactionCommands::HandleRedo(const TSharedP
 		return MakeErrorResponse(TEXT("GEditor is not available"));
 	}
 
-	bool bSuccess = GEditor->RedoTransaction();
+	bool bRedid = GEditor->RedoTransaction();
 
 	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
-	Result->SetBoolField(TEXT("success"), bSuccess);
-	if (!bSuccess)
-	{
-		Result->SetStringField(TEXT("message"), TEXT("Nothing to redo"));
-	}
+	Result->SetBoolField(TEXT("success"), true);
+	Result->SetBoolField(TEXT("redid"), bRedid);
+	Result->SetStringField(TEXT("message"), bRedid ? TEXT("Redo successful") : TEXT("Nothing to redo"));
 	return Result;
 }

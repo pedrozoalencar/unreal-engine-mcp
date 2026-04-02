@@ -1,5 +1,6 @@
 #include "Commands/Asset/UnrealMCPAssetCommands.h"
 #include "EditorAssetLibrary.h"
+#include "ObjectTools.h"
 #include "AssetRegistry/AssetRegistryModule.h"
 #include "AssetRegistry/IAssetRegistry.h"
 #include "AssetToolsModule.h"
@@ -340,10 +341,32 @@ TSharedPtr<FJsonObject> FUnrealMCPAssetCommands::HandleDeleteAsset(const TShared
 
 	if (!UEditorAssetLibrary::DoesAssetExist(AssetPath))
 	{
-		return MakeErrorResponse(FString::Printf(TEXT("Asset does not exist: %s"), *AssetPath));
+		// Not an error - asset already doesn't exist (idempotent)
+		TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+		Result->SetBoolField(TEXT("success"), true);
+		Result->SetStringField(TEXT("deleted_path"), AssetPath);
+		Result->SetStringField(TEXT("message"), TEXT("Asset did not exist"));
+		return Result;
 	}
 
-	bool bSuccess = UEditorAssetLibrary::DeleteAsset(AssetPath);
+	// Load the asset and force delete (avoids reference check dialogs that block)
+	UObject* Asset = UEditorAssetLibrary::LoadAsset(AssetPath);
+	bool bSuccess = false;
+	if (Asset)
+	{
+		TArray<UObject*> ObjectsToDelete;
+		ObjectsToDelete.Add(Asset);
+		// Use ObjectTools to delete without confirmation dialogs
+		int32 DeletedCount = ObjectTools::ForceDeleteObjects(ObjectsToDelete, false);
+		bSuccess = (DeletedCount > 0);
+	}
+
+	if (!bSuccess)
+	{
+		// Fallback to standard delete
+		bSuccess = UEditorAssetLibrary::DeleteAsset(AssetPath);
+	}
+
 	if (!bSuccess)
 	{
 		return MakeErrorResponse(FString::Printf(TEXT("Failed to delete asset: %s"), *AssetPath));
