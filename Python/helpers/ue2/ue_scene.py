@@ -14,6 +14,21 @@ ACTIONS = [
 ]
 
 
+def _resolve_actor_name(conn, name: str) -> str:
+    """Resolve actor name: tries label first via level handler, falls back to internal name.
+    Returns the internal name that legacy commands need."""
+    # Try as label via level_get_actor_properties (accepts labels)
+    try:
+        result = conn.send_command("level_get_actor_properties", {"actor_name": name})
+        if result and result.get("status") != "error":
+            data = result.get("result", result)
+            if data.get("success"):
+                return data.get("actor_name", name)  # Returns internal name
+    except Exception:
+        pass
+    return name  # Fallback: assume it's already the internal name
+
+
 def register_scene_tools(mcp, get_connection):
     """Register the ue_scene action-based tool."""
 
@@ -135,7 +150,8 @@ def register_scene_tools(mcp, get_connection):
             elif action == "destroy_actor":
                 if not name:
                     return UEResponse.error("E_INVALID_ARGUMENT", "Parameter 'name' is required for destroy_actor", TOOL)
-                result = cmd(conn, "delete_actor", {"actor_name": name})
+                resolved = _resolve_actor_name(conn, name)
+                result = cmd(conn, "delete_actor", {"actor_name": resolved})
                 data = extract_data(result)
                 return UEResponse.ok(data, tool=TOOL, duration_ms=(time.time() - t0) * 1000)
 
@@ -143,8 +159,9 @@ def register_scene_tools(mcp, get_connection):
             elif action == "set_transform":
                 if not name:
                     return UEResponse.error("E_INVALID_ARGUMENT", "Parameter 'name' is required for set_transform", TOOL)
+                resolved = _resolve_actor_name(conn, name)
                 params = {
-                    "actor_name": name,
+                    "actor_name": resolved,
                     "location": location,
                     "rotation": rotation,
                     "scale": scale,

@@ -1,6 +1,8 @@
 """UE2 Capture tool -- viewport screenshots, camera control, and multi-view asset capture."""
 import time
 import math
+import os
+from datetime import datetime
 from typing import Any, Dict, List
 
 from helpers.ue2.response import UEResponse, cmd, extract_data
@@ -45,9 +47,13 @@ def register_capture_tools(mcp, get_connection):
         try:
             # ------------------------------------------------------------------
             if action == "screenshot":
-                params = {}
-                if file_path:
-                    params["file_path"] = file_path
+                if not file_path:
+                    # Generate default path
+                    ts = datetime.now().strftime("%Y%m%d_%H%M%S")
+                    default_dir = "C:/Users/Renato/Workspaces/atomic_grids/unreal_demo/Glass/Glass/Saved/Screenshots"
+                    os.makedirs(default_dir, exist_ok=True)
+                    file_path = f"{default_dir}/screenshot_{ts}.png"
+                params = {"file_path": file_path}
                 result = cmd(conn, "level_get_viewport_screenshot", params)
                 data = extract_data(result)
                 return UEResponse.ok(data, tool=TOOL, duration_ms=(time.time() - t0) * 1000)
