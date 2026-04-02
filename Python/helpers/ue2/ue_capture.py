@@ -79,17 +79,14 @@ def register_capture_tools(mcp, get_connection):
                     return UEResponse.error("E_INVALID_ARGUMENT",
                         "'actor_name' required for asset_turntable", TOOL)
 
-                # Get actor position first
-                actor_result = cmd(conn, "find_actors_by_name", {"name": actor_name})
+                # Get actor position via get_actor_properties (uses label matching)
+                actor_result = cmd(conn, "level_get_actor_properties", {"actor_name": actor_name})
                 actor_data = extract_data(actor_result)
-                actors = actor_data.get("actors", [])
-                if not actors:
+                if not actor_data.get("success", False):
                     return UEResponse.error("E_NOT_FOUND", f"Actor '{actor_name}' not found", TOOL)
 
-                actor = actors[0]
-                cx = actor.get("location", {}).get("x", 0)
-                cy = actor.get("location", {}).get("y", 0)
-                cz = actor.get("location", {}).get("z", 0)
+                loc = actor_data.get("location", [0, 0, 0])
+                cx, cy, cz = loc[0], loc[1], loc[2]
 
                 # Default views
                 if not views:
