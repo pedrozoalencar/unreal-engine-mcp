@@ -23,6 +23,7 @@
 #include "Components/StaticMeshComponent.h"
 #include "Components/DynamicMeshComponent.h"
 #include "UObject/UObjectIterator.h"
+#include "EngineUtils.h"
 
 FUnrealMCPMaterialCommands::FUnrealMCPMaterialCommands()
 {
@@ -210,7 +211,8 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleCreateMaterial(const T
 		else if (TLM == TEXT("VolumetricPerVertexDirectional")) Material->TranslucencyLightingMode = TLM_VolumetricPerVertexDirectional;
 		else if (TLM == TEXT("Surface")) Material->TranslucencyLightingMode = TLM_Surface;
 		else if (TLM == TEXT("SurfacePerPixelLighting")) Material->TranslucencyLightingMode = TLM_SurfacePerPixelLighting;
-		else if (TLM == TEXT("SurfaceForwardShading")) Material->TranslucencyLightingMode = TLM_SurfaceForwardShading;
+		// SurfaceForwardShading removed in UE5.7, map to SurfacePerPixelLighting
+		else if (TLM == TEXT("SurfaceForwardShading")) Material->TranslucencyLightingMode = TLM_SurfacePerPixelLighting;
 	}
 
 	Material->PreEditChange(nullptr);
@@ -299,7 +301,8 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleSetMaterialProperty(co
 		else if (PropertyValue == TEXT("VolumetricPerVertexDirectional")) { Material->TranslucencyLightingMode = TLM_VolumetricPerVertexDirectional; bPropertySet = true; }
 		else if (PropertyValue == TEXT("Surface")) { Material->TranslucencyLightingMode = TLM_Surface; bPropertySet = true; }
 		else if (PropertyValue == TEXT("SurfacePerPixelLighting")) { Material->TranslucencyLightingMode = TLM_SurfacePerPixelLighting; bPropertySet = true; }
-		else if (PropertyValue == TEXT("SurfaceForwardShading")) { Material->TranslucencyLightingMode = TLM_SurfaceForwardShading; bPropertySet = true; }
+		// SurfaceForwardShading removed in UE5.7, map to SurfacePerPixelLighting
+		else if (PropertyValue == TEXT("SurfaceForwardShading")) { Material->TranslucencyLightingMode = TLM_SurfacePerPixelLighting; bPropertySet = true; }
 	}
 	else if (PropertyName == TEXT("opacity_mask_clip_value"))
 	{
@@ -345,11 +348,10 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleGetMaterialInfo(const 
 	switch (Material->BlendMode)
 	{
 		case BLEND_Opaque: BlendModeStr = TEXT("Opaque"); break;
-		case BLEND_Translucent: BlendModeStr = TEXT("Translucent"); break;
+		case BLEND_Translucent: BlendModeStr = TEXT("Translucent"); break; // Also covers TranslucentGreyTransmittance (same value)
 		case BLEND_TranslucentColoredTransmittance: BlendModeStr = TEXT("TranslucentColoredTransmittance"); break;
-		case BLEND_TranslucentGreyTransmittance: BlendModeStr = TEXT("TranslucentGreyTransmittance"); break;
 		case BLEND_Additive: BlendModeStr = TEXT("Additive"); break;
-		case BLEND_Modulate: BlendModeStr = TEXT("Modulate"); break;
+		case BLEND_Modulate: BlendModeStr = TEXT("Modulate"); break; // Also covers ColoredTransmittanceOnly (same value)
 		default: BlendModeStr = TEXT("Unknown"); break;
 	}
 	Result->SetStringField(TEXT("blend_mode"), BlendModeStr);
@@ -376,7 +378,6 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleGetMaterialInfo(const 
 		case TLM_VolumetricPerVertexDirectional: TLMStr = TEXT("VolumetricPerVertexDirectional"); break;
 		case TLM_Surface: TLMStr = TEXT("Surface"); break;
 		case TLM_SurfacePerPixelLighting: TLMStr = TEXT("SurfacePerPixelLighting"); break;
-		case TLM_SurfaceForwardShading: TLMStr = TEXT("SurfaceForwardShading"); break;
 		default: TLMStr = TEXT("Unknown"); break;
 	}
 	Result->SetStringField(TEXT("translucency_lighting_mode"), TLMStr);
@@ -502,7 +503,7 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleAddExpression(const TS
 		}
 		if (Params->HasField(TEXT("base_reflect_fraction")))
 		{
-			FresnelExpr->BaseReflectFractionIn = static_cast<float>(Params->GetNumberField(TEXT("base_reflect_fraction")));
+			FresnelExpr->BaseReflectFraction = static_cast<float>(Params->GetNumberField(TEXT("base_reflect_fraction")));
 		}
 	}
 	else if (UMaterialExpressionScalarParameter* ScalarParam = Cast<UMaterialExpressionScalarParameter>(NewExpr))
@@ -583,10 +584,11 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleDeleteExpression(const
 	for (UMaterialExpression* OtherExpr : Expressions)
 	{
 		if (!OtherExpr || OtherExpr == Expr) continue;
-		TArray<FExpressionInput*> Inputs = OtherExpr->GetInputs();
-		for (FExpressionInput* Input : Inputs)
+		for (int32 InputIdx = 0; ; InputIdx++)
 		{
-			if (Input && Input->Expression == Expr)
+			FExpressionInput* Input = OtherExpr->GetInput(InputIdx);
+			if (!Input) break;
+			if (Input->Expression == Expr)
 			{
 				Input->Expression = nullptr;
 				Input->OutputIndex = 0;
@@ -684,22 +686,26 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleListPins(const TShared
 
 	// Get inputs
 	TArray<TSharedPtr<FJsonValue>> InputArray;
-	TArray<FExpressionInput*> Inputs = Expression->GetInputs();
-	for (int32 i = 0; i < Inputs.Num(); i++)
+	int32 InputCount = 0;
+	for (int32 i = 0; ; i++)
 	{
+		FExpressionInput* Input = Expression->GetInput(i);
+		if (!Input) break;
+		InputCount++;
+
 		TSharedPtr<FJsonObject> PinJson = MakeShareable(new FJsonObject);
 		FName InputName = Expression->GetInputName(i);
 		PinJson->SetStringField(TEXT("name"), InputName.ToString());
 		PinJson->SetNumberField(TEXT("index"), i);
 		PinJson->SetStringField(TEXT("direction"), TEXT("input"));
 
-		bool bConnected = Inputs[i]->Expression != nullptr;
+		bool bConnected = Input->Expression != nullptr;
 		PinJson->SetBoolField(TEXT("connected"), bConnected);
 		if (bConnected)
 		{
-			PinJson->SetStringField(TEXT("connected_to_class"), Inputs[i]->Expression->GetClass()->GetName());
-			PinJson->SetStringField(TEXT("connected_to_name"), Inputs[i]->Expression->GetName());
-			PinJson->SetNumberField(TEXT("connected_output_index"), Inputs[i]->OutputIndex);
+			PinJson->SetStringField(TEXT("connected_to_class"), Input->Expression->GetClass()->GetName());
+			PinJson->SetStringField(TEXT("connected_to_name"), Input->Expression->GetName());
+			PinJson->SetNumberField(TEXT("connected_output_index"), Input->OutputIndex);
 		}
 
 		InputArray.Add(MakeShareable(new FJsonValueObject(PinJson)));
@@ -731,7 +737,7 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleListPins(const TShared
 	Result->SetStringField(TEXT("expression_name"), Expression->GetName());
 	Result->SetArrayField(TEXT("inputs"), InputArray);
 	Result->SetArrayField(TEXT("outputs"), OutputArray);
-	Result->SetNumberField(TEXT("input_count"), Inputs.Num());
+	Result->SetNumberField(TEXT("input_count"), InputCount);
 	Result->SetNumberField(TEXT("output_count"), Outputs.Num());
 	return Result;
 }
@@ -778,14 +784,15 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleConnectExpressions(con
 	if (!InputPinName.IsEmpty())
 	{
 		// Find input by name
-		TArray<FExpressionInput*> Inputs = TargetExpr->GetInputs();
-		for (int32 i = 0; i < Inputs.Num(); i++)
+		for (int32 i = 0; ; i++)
 		{
+			FExpressionInput* Input = TargetExpr->GetInput(i);
+			if (!Input) break;
 			FName InputName = TargetExpr->GetInputName(i);
 			if (InputName.ToString() == InputPinName)
 			{
-				Inputs[i]->Expression = SourceExpr;
-				Inputs[i]->OutputIndex = OutputIndex;
+				Input->Expression = SourceExpr;
+				Input->OutputIndex = OutputIndex;
 				bConnected = true;
 				break;
 			}
@@ -795,22 +802,22 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleConnectExpressions(con
 	{
 		// Find input by index
 		int32 InputIndex = static_cast<int32>(Params->GetNumberField(TEXT("input_index")));
-		TArray<FExpressionInput*> Inputs = TargetExpr->GetInputs();
-		if (Inputs.IsValidIndex(InputIndex))
+		FExpressionInput* Input = TargetExpr->GetInput(InputIndex);
+		if (Input)
 		{
-			Inputs[InputIndex]->Expression = SourceExpr;
-			Inputs[InputIndex]->OutputIndex = OutputIndex;
+			Input->Expression = SourceExpr;
+			Input->OutputIndex = OutputIndex;
 			bConnected = true;
 		}
 	}
 	else
 	{
 		// Default: connect to first input
-		TArray<FExpressionInput*> Inputs = TargetExpr->GetInputs();
-		if (Inputs.Num() > 0)
+		FExpressionInput* Input = TargetExpr->GetInput(0);
+		if (Input)
 		{
-			Inputs[0]->Expression = SourceExpr;
-			Inputs[0]->OutputIndex = OutputIndex;
+			Input->Expression = SourceExpr;
+			Input->OutputIndex = OutputIndex;
 			bConnected = true;
 		}
 	}
@@ -925,14 +932,15 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleDisconnectExpression(c
 	if (!InputPinName.IsEmpty())
 	{
 		// Disconnect specific input pin by name
-		TArray<FExpressionInput*> Inputs = Expression->GetInputs();
-		for (int32 i = 0; i < Inputs.Num(); i++)
+		for (int32 i = 0; ; i++)
 		{
+			FExpressionInput* Input = Expression->GetInput(i);
+			if (!Input) break;
 			FName InputName = Expression->GetInputName(i);
 			if (InputName.ToString() == InputPinName)
 			{
-				Inputs[i]->Expression = nullptr;
-				Inputs[i]->OutputIndex = 0;
+				Input->Expression = nullptr;
+				Input->OutputIndex = 0;
 				bDisconnected = true;
 				break;
 			}
@@ -942,25 +950,23 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleDisconnectExpression(c
 	{
 		// Disconnect by index
 		int32 InputIndex = static_cast<int32>(Params->GetNumberField(TEXT("input_index")));
-		TArray<FExpressionInput*> Inputs = Expression->GetInputs();
-		if (Inputs.IsValidIndex(InputIndex))
+		FExpressionInput* Input = Expression->GetInput(InputIndex);
+		if (Input)
 		{
-			Inputs[InputIndex]->Expression = nullptr;
-			Inputs[InputIndex]->OutputIndex = 0;
+			Input->Expression = nullptr;
+			Input->OutputIndex = 0;
 			bDisconnected = true;
 		}
 	}
 	else
 	{
 		// Disconnect all inputs
-		TArray<FExpressionInput*> Inputs = Expression->GetInputs();
-		for (FExpressionInput* Input : Inputs)
+		for (int32 i = 0; ; i++)
 		{
-			if (Input)
-			{
-				Input->Expression = nullptr;
-				Input->OutputIndex = 0;
-			}
+			FExpressionInput* Input = Expression->GetInput(i);
+			if (!Input) break;
+			Input->Expression = nullptr;
+			Input->OutputIndex = 0;
 		}
 		bDisconnected = true;
 	}
@@ -1098,7 +1104,7 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleSetExpressionValue(con
 			bValueSet = true;
 		}
 	}
-	// MaterialExpressionFresnel - set Exponent and BaseReflectFractionIn
+	// MaterialExpressionFresnel - set Exponent and BaseReflectFraction
 	else if (UMaterialExpressionFresnel* FresnelExpr = Cast<UMaterialExpressionFresnel>(Expression))
 	{
 		if (Params->HasField(TEXT("exponent")))
@@ -1109,8 +1115,8 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleSetExpressionValue(con
 		}
 		if (Params->HasField(TEXT("base_reflect_fraction")))
 		{
-			FresnelExpr->BaseReflectFractionIn = static_cast<float>(Params->GetNumberField(TEXT("base_reflect_fraction")));
-			ValueDescription += FString::Printf(TEXT("BaseReflectFractionIn = %f"), FresnelExpr->BaseReflectFractionIn);
+			FresnelExpr->BaseReflectFraction = static_cast<float>(Params->GetNumberField(TEXT("base_reflect_fraction")));
+			ValueDescription += FString::Printf(TEXT("BaseReflectFractionIn = %f"), FresnelExpr->BaseReflectFraction);
 			bValueSet = true;
 		}
 	}
@@ -1167,14 +1173,9 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleCompileMaterial(const 
 	}
 
 	// Trigger recompilation
-	{
-		FMaterialUpdateContext UpdateContext;
-		UpdateContext.AddMaterial(Material);
-
-		Material->PreEditChange(nullptr);
-		Material->PostEditChange();
-		Material->MarkPackageDirty();
-	}
+	Material->PreEditChange(nullptr);
+	Material->PostEditChange();
+	Material->MarkPackageDirty();
 
 	TSharedPtr<FJsonObject> Result = MakeShareable(new FJsonObject);
 	Result->SetBoolField(TEXT("success"), true);

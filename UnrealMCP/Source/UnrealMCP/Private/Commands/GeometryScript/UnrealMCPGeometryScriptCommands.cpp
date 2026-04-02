@@ -653,7 +653,7 @@ TSharedPtr<FJsonObject> FUnrealMCPGeometryScriptCommands::HandlePerlinNoise(cons
 
 	FGeometryScriptMeshSelection Selection; // empty = full mesh
 
-	UGeometryScriptLibrary_MeshDeformFunctions::ApplyPerlinNoiseToMesh(
+	UGeometryScriptLibrary_MeshDeformFunctions::ApplyPerlinNoiseToMesh2(
 		Mesh, Selection, Options, nullptr);
 
 	return MakeSuccessResponse(MeshName, Mesh);

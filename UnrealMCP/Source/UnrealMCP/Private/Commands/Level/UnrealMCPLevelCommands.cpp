@@ -198,13 +198,13 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleSpawnBlueprintByPath(cons
 	}
 	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AdjustIfPossibleButAlwaysSpawn;
 
-	AActor* NewActor = World->SpawnActor<AActor>(SpawnClass, &Location, &Rotation, SpawnParams);
+	FTransform SpawnTransform(Rotation.Quaternion(), Location, Scale);
+	SpawnParams.SpawnCollisionHandlingOverride = ESpawnActorCollisionHandlingMethod::AlwaysSpawn;
+	AActor* NewActor = World->SpawnActor(SpawnClass, &SpawnTransform, SpawnParams);
 	if (!NewActor)
 	{
 		return MakeErrorResponse(TEXT("SpawnActor failed"));
 	}
-
-	NewActor->SetActorScale3D(Scale);
 
 	// Build response
 	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
@@ -619,7 +619,7 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleGetViewportScreenshot(con
 	}
 
 	// Compress to PNG
-	TArray<uint8> PngData;
+	TArray64<uint8> PngData;
 	FImageUtils::PNGCompressImageArray(Width, Height, Bitmap, PngData);
 
 	if (PngData.Num() == 0)
@@ -627,8 +627,10 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleGetViewportScreenshot(con
 		return MakeErrorResponse(TEXT("Failed to compress screenshot to PNG"));
 	}
 
-	// Write to file
-	if (!FFileHelper::SaveArrayToFile(PngData, *FilePath))
+	// Write to file - convert TArray64 to TArray for SaveArrayToFile
+	TArray<uint8> PngDataSmall;
+	PngDataSmall.Append(PngData.GetData(), static_cast<int32>(PngData.Num()));
+	if (!FFileHelper::SaveArrayToFile(PngDataSmall, *FilePath))
 	{
 		return MakeErrorResponse(FString::Printf(TEXT("Failed to save screenshot to: %s"), *FilePath));
 	}
@@ -638,7 +640,7 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleGetViewportScreenshot(con
 	Result->SetStringField(TEXT("file_path"), FilePath);
 	Result->SetNumberField(TEXT("width"), Width);
 	Result->SetNumberField(TEXT("height"), Height);
-	Result->SetNumberField(TEXT("file_size_bytes"), PngData.Num());
+	Result->SetNumberField(TEXT("file_size_bytes"), PngDataSmall.Num());
 	return Result;
 }
 

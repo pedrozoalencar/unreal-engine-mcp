@@ -142,7 +142,7 @@ TSharedPtr<FJsonObject> FUnrealMCPAssetCommands::HandleFindAssets(const TSharedP
 	}
 
 	// Use the Asset Registry for an efficient search
-	IAssetRegistry& AssetRegistry = IAssetRegistry::Get();
+	IAssetRegistry& AssetRegistry = *IAssetRegistry::Get();
 
 	FARFilter Filter;
 	Filter.bRecursivePaths = true;
@@ -238,7 +238,7 @@ TSharedPtr<FJsonObject> FUnrealMCPAssetCommands::HandleGetAssetInfo(const TShare
 
 	// Check for referencers
 	TArray<FName> Referencers;
-	IAssetRegistry& AssetRegistry = IAssetRegistry::Get();
+	IAssetRegistry& AssetRegistry = *IAssetRegistry::Get();
 	AssetRegistry.GetReferencers(AssetData.PackageName, Referencers);
 	InfoObj->SetBoolField(TEXT("has_referencers"), Referencers.Num() > 0);
 	InfoObj->SetNumberField(TEXT("referencer_count"), Referencers.Num());
@@ -419,7 +419,14 @@ TSharedPtr<FJsonObject> FUnrealMCPAssetCommands::HandleSaveAll(const TSharedPtr<
 		}
 	}
 
-	bool bSuccess = UEditorAssetLibrary::SaveLoadedAssets();
+	// Collect all dirty assets and save them
+	TArray<UObject*> AssetsToSave;
+	for (UPackage* Package : DirtyPackages)
+	{
+		UObject* Asset = Package->FindAssetInPackage();
+		if (Asset) AssetsToSave.Add(Asset);
+	}
+	bool bSuccess = AssetsToSave.Num() > 0 ? UEditorAssetLibrary::SaveLoadedAssets(AssetsToSave, true) : true;
 
 	// Report which packages were dirty (and thus candidates for saving)
 	for (UPackage* Package : DirtyPackages)
