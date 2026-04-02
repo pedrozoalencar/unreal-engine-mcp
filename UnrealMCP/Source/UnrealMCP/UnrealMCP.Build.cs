@@ -15,7 +15,9 @@ public class UnrealMCP : ModuleRules
 				System.IO.Path.Combine(ModuleDirectory, "Public"),
 				System.IO.Path.Combine(ModuleDirectory, "Public/Commands"),
 				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/BlueprintGraph"),
-				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/BlueprintGraph/Nodes")
+				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/BlueprintGraph/Nodes"),
+				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/GeometryScript"),
+				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/PythonExec")
 			}
 		);
 
@@ -24,7 +26,9 @@ public class UnrealMCP : ModuleRules
 				System.IO.Path.Combine(ModuleDirectory, "Private"),
 				System.IO.Path.Combine(ModuleDirectory, "Private/Commands"),
 				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/BlueprintGraph"),
-				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/BlueprintGraph/Nodes")
+				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/BlueprintGraph/Nodes"),
+				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/GeometryScript"),
+				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/PythonExec")
 			}
 		);
 		
@@ -43,11 +47,17 @@ public class UnrealMCP : ModuleRules
 				"DeveloperSettings",
 				"PhysicsCore",
 				"UnrealEd",           // For Blueprint editing
-				"BlueprintGraph",     // For K2Node classes (F15-F22)
-				"KismetCompiler"      // For Blueprint compilation (F15-F22)
+				"BlueprintGraph",     // For K2Node classes
+				"KismetCompiler",     // For Blueprint compilation
+				// Geometry Script modules
+				"GeometryScriptingCore",  // UGeometryScriptLibrary_* classes
+				"GeometryCore",           // FDynamicMesh3, geometric types
+				"GeometryFramework",      // UDynamicMesh
+				"DynamicMesh",            // Dynamic mesh infrastructure
+				"ModelingComponents"      // UDynamicMeshComponent
 			}
 		);
-		
+
 		PrivateDependencyModuleNames.AddRange(
 			new string[]
 			{
@@ -57,7 +67,9 @@ public class UnrealMCP : ModuleRules
 				"SlateCore",
 				"Kismet",
 				"Projects",
-				"AssetRegistry"
+				"AssetRegistry",
+				"MeshDescription",         // For mesh conversion
+				"StaticMeshDescription"    // For static mesh conversion
 			}
 		);
 		
@@ -76,7 +88,15 @@ public class UnrealMCP : ModuleRules
 		DynamicallyLoadedModuleNames.AddRange(
 			new string[]
 			{
-				// ... add any modules that your module loads dynamically here ...
+				"PythonScriptPlugin"  // Loaded dynamically for Python exec commands
+			}
+		);
+
+		// Add Python plugin include paths (loaded dynamically, not linked)
+		PrivateIncludePathModuleNames.AddRange(
+			new string[]
+			{
+				"PythonScriptPlugin"
 			}
 		);
 	}

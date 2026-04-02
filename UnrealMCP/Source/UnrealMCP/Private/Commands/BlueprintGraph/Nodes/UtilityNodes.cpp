@@ -5,7 +5,114 @@
 #include "K2Node_SpawnActorFromClass.h"
 #include "EdGraphSchema_K2.h"
 #include "Kismet/KismetSystemLibrary.h"
+#include "Kismet/KismetMathLibrary.h"
+#include "Kismet/GameplayStatics.h"
 #include "Json.h"
+#include "UObject/UObjectIterator.h"
+
+// Helper: find a UClass by name across all loaded modules
+static UClass* FindClassByName(const FString& ClassName)
+{
+	// 1. Try StaticFindObject with full path (e.g. "/Script/GeometryScriptingCore.GeometryScriptLibrary_MeshPrimitiveFunctions")
+	UClass* Found = Cast<UClass>(StaticFindObject(UClass::StaticClass(), nullptr, *ClassName));
+	if (Found) return Found;
+
+	// 2. Try common module paths
+	TArray<FString> ModulePaths = {
+		TEXT("/Script/Engine"),
+		TEXT("/Script/CoreUObject"),
+		TEXT("/Script/GeometryScriptingCore"),
+		TEXT("/Script/GeometryScriptingEditor"),
+		TEXT("/Script/DynamicMesh"),
+		TEXT("/Script/GeometryCore"),
+		TEXT("/Script/GeometryFramework"),
+		TEXT("/Script/ModelingComponents"),
+		TEXT("/Script/UMG"),
+		TEXT("/Script/Niagara"),
+		TEXT("/Script/PCG")
+	};
+
+	for (const FString& ModulePath : ModulePaths)
+	{
+		FString FullPath = FString::Printf(TEXT("%s.%s"), *ModulePath, *ClassName);
+		Found = Cast<UClass>(StaticFindObject(UClass::StaticClass(), nullptr, *FullPath));
+		if (Found) return Found;
+	}
+
+	// 3. Try with 'U' prefix if not present
+	if (!ClassName.StartsWith(TEXT("U")) && !ClassName.StartsWith(TEXT("A")))
+	{
+		FString WithPrefix = TEXT("U") + ClassName;
+		for (const FString& ModulePath : ModulePaths)
+		{
+			FString FullPath = FString::Printf(TEXT("%s.%s"), *ModulePath, *WithPrefix);
+			Found = Cast<UClass>(StaticFindObject(UClass::StaticClass(), nullptr, *FullPath));
+			if (Found) return Found;
+		}
+	}
+
+	// 4. Brute force: iterate all UClasses looking for name match
+	FString ShortName = ClassName;
+	// Strip module prefix if present (e.g. "GeometryScriptLibrary_MeshPrimitiveFunctions")
+	if (ShortName.Contains(TEXT(".")))
+	{
+		ShortName = ShortName.RightChop(ShortName.Find(TEXT(".")) + 1);
+	}
+
+	for (TObjectIterator<UClass> It; It; ++It)
+	{
+		UClass* Class = *It;
+		if (Class->GetName() == ShortName || Class->GetName() == ClassName)
+		{
+			return Class;
+		}
+	}
+
+	return nullptr;
+}
+
+// Helper: find a UFunction by name, searching common library classes and any specified class
+static UFunction* FindFunctionAcrossClasses(const FString& FunctionName, const FString& ClassName)
+{
+	UFunction* Func = nullptr;
+
+	// If a class was specified, search it first
+	if (!ClassName.IsEmpty())
+	{
+		UClass* TargetClass = FindClassByName(ClassName);
+		if (TargetClass)
+		{
+			Func = TargetClass->FindFunctionByName(FName(*FunctionName));
+			if (Func) return Func;
+		}
+	}
+
+	// Search common Kismet libraries
+	TArray<UClass*> CommonClasses = {
+		UKismetSystemLibrary::StaticClass(),
+		UKismetMathLibrary::StaticClass(),
+		UGameplayStatics::StaticClass()
+	};
+
+	for (UClass* Class : CommonClasses)
+	{
+		Func = Class->FindFunctionByName(FName(*FunctionName));
+		if (Func) return Func;
+	}
+
+	// Brute force: search ALL BlueprintFunctionLibrary subclasses
+	for (TObjectIterator<UClass> It; It; ++It)
+	{
+		UClass* Class = *It;
+		if (Class->IsChildOf(UBlueprintFunctionLibrary::StaticClass()))
+		{
+			Func = Class->FindFunctionByName(FName(*FunctionName));
+			if (Func) return Func;
+		}
+	}
+
+	return nullptr;
+}
 
 UK2Node* FUtilityNodeCreator::CreatePrintNode(UEdGraph* Graph, const TSharedPtr<FJsonObject>& Params)
 {
@@ -29,7 +136,6 @@ UK2Node* FUtilityNodeCreator::CreatePrintNode(UEdGraph* Graph, const TSharedPtr<
 		return nullptr;
 	}
 
-	// Set function reference BEFORE initialization
 	PrintNode->SetFromFunction(PrintFunc);
 
 	double PosX, PosY;
@@ -40,7 +146,6 @@ UK2Node* FUtilityNodeCreator::CreatePrintNode(UEdGraph* Graph, const TSharedPtr<
 	Graph->AddNode(PrintNode, true, false);
 	FNodeCreatorUtils::InitializeK2Node(PrintNode, Graph);
 
-	// Set message if provided AFTER initialization
 	FString Message;
 	if (Params->TryGetStringField(TEXT("message"), Message))
 	{
@@ -61,10 +166,25 @@ UK2Node* FUtilityNodeCreator::CreateCallFunctionNode(UEdGraph* Graph, const TSha
 		return nullptr;
 	}
 
-	// Get target function name
 	FString TargetFunction;
 	if (!Params->TryGetStringField(TEXT("target_function"), TargetFunction))
 	{
+		return nullptr;
+	}
+
+	// Accept both "target_class" and "target_blueprint" as the class specifier
+	FString ClassName;
+	if (!Params->TryGetStringField(TEXT("target_class"), ClassName))
+	{
+		Params->TryGetStringField(TEXT("target_blueprint"), ClassName);
+	}
+
+	// Find the function using our comprehensive search
+	UFunction* TargetFunc = FindFunctionAcrossClasses(TargetFunction, ClassName);
+
+	if (!TargetFunc)
+	{
+		UE_LOG(LogTemp, Error, TEXT("CallFunction: Could not find function '%s' (class hint: '%s')"), *TargetFunction, *ClassName);
 		return nullptr;
 	}
 
@@ -74,29 +194,6 @@ UK2Node* FUtilityNodeCreator::CreateCallFunctionNode(UEdGraph* Graph, const TSha
 		return nullptr;
 	}
 
-	// Find the function to call
-	UFunction* TargetFunc = nullptr;
-	FString ClassName;
-	if (Params->TryGetStringField(TEXT("target_class"), ClassName))
-	{
-		UClass* TargetClass = Cast<UClass>(StaticFindObject(UClass::StaticClass(), nullptr, *ClassName));
-		if (TargetClass)
-		{
-			TargetFunc = TargetClass->FindFunctionByName(FName(*TargetFunction));
-		}
-	}
-	else
-	{
-		// Try common Unreal classes
-		TargetFunc = UKismetSystemLibrary::StaticClass()->FindFunctionByName(FName(*TargetFunction));
-	}
-
-	if (!TargetFunc)
-	{
-		return nullptr;
-	}
-
-	// Set function reference BEFORE initialization
 	CallNode->SetFromFunction(TargetFunc);
 
 	double PosX, PosY;
@@ -106,6 +203,20 @@ UK2Node* FUtilityNodeCreator::CreateCallFunctionNode(UEdGraph* Graph, const TSha
 
 	Graph->AddNode(CallNode, true, false);
 	FNodeCreatorUtils::InitializeK2Node(CallNode, Graph);
+
+	// Set default pin values if provided
+	const TSharedPtr<FJsonObject>* PinDefaults = nullptr;
+	if (Params->TryGetObjectField(TEXT("pin_defaults"), PinDefaults))
+	{
+		for (auto& Pair : (*PinDefaults)->Values)
+		{
+			UEdGraphPin* Pin = CallNode->FindPin(FName(*Pair.Key));
+			if (Pin)
+			{
+				Pin->DefaultValue = Pair.Value->AsString();
+			}
+		}
+	}
 
 	return CallNode;
 }
@@ -157,4 +268,3 @@ UK2Node* FUtilityNodeCreator::CreateSpawnActorNode(UEdGraph* Graph, const TShare
 
 	return SpawnActorNode;
 }
-

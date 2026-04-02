@@ -55,6 +55,27 @@ from helpers.blueprint_graph import node_properties
 from helpers.blueprint_graph import function_manager
 from helpers.blueprint_graph import function_io
 
+# ============================================================================
+# Geometry Script Tools
+# ============================================================================
+from helpers.geometry_script.primitives import register_primitive_tools
+from helpers.geometry_script.booleans import register_boolean_tools
+from helpers.geometry_script.modeling import register_modeling_tools
+from helpers.geometry_script.deformations import register_deformation_tools
+from helpers.geometry_script.queries import register_query_tools
+from helpers.geometry_script.uv_operations import register_uv_tools
+from helpers.geometry_script.materials import register_material_tools
+
+# ============================================================================
+# Remote Control API Tools
+# ============================================================================
+from helpers.remote_control.rc_properties import register_rc_tools
+
+# ============================================================================
+# Python Execution Tools
+# ============================================================================
+from helpers.python_exec.script_runner import register_python_exec_tools
+
 
 # Configure logging with more detailed format
 logging.basicConfig(
@@ -2785,12 +2806,74 @@ def rename_function(
         return {"success": False, "message": str(e)}
 
 
-# Run the server
+# ============================================================================
+# NEW Blueprint Graph Tools: set_pin_value, add_event_override
+# ============================================================================
+
+@mcp.tool()
+def set_pin_value(
+    blueprint_name: str,
+    node_id: str,
+    pin_name: str,
+    pin_value: Any,
+    function_name: str = ""
+) -> Dict[str, Any]:
+    """Set a default value on a specific pin of a Blueprint node.
+    node_id: the node GUID or name (e.g. 'K2Node_CallFunction_0').
+    pin_name: the pin to set (e.g. 'Radius', 'Height', 'RadialSteps').
+    pin_value: the value - numbers, booleans, strings all accepted (converted to string internally).
+    function_name: specify if the node is in a function graph (not EventGraph)."""
+    unreal = get_unreal_connection()
+    if not unreal:
+        return {"success": False, "message": "Failed to connect to Unreal Engine"}
+    try:
+        params = {
+            "blueprint_name": blueprint_name,
+            "node_id": node_id,
+            "pin_name": pin_name,
+            "pin_value": str(pin_value)
+        }
+        if function_name:
+            params["function_name"] = function_name
+        return unreal.send_command("set_pin_value", params)
+    except Exception as e:
+        return {"success": False, "message": str(e)}
+
+@mcp.tool()
+def add_event_override(
+    blueprint_name: str,
+    event_name: str
+) -> Dict[str, Any]:
+    """Override a parent class event/function in a Blueprint (e.g. OnRebuildGeneratedMesh, ReceiveBeginPlay).
+    Creates the function override graph and returns the entry node ID and its output pins.
+    Use this to override GeneratedDynamicMeshActor's OnRebuildGeneratedMesh for Geometry Script Blueprints."""
+    unreal = get_unreal_connection()
+    if not unreal:
+        return {"success": False, "message": "Failed to connect to Unreal Engine"}
+    try:
+        return unreal.send_command("add_event_override", {
+            "blueprint_name": blueprint_name,
+            "event_name": event_name
+        })
+    except Exception as e:
+        return {"success": False, "message": str(e)}
 
 
+# ============================================================================
+# Register NEW tool modules
+# ============================================================================
+register_primitive_tools(mcp, get_unreal_connection)
+register_boolean_tools(mcp, get_unreal_connection)
+register_modeling_tools(mcp, get_unreal_connection)
+register_deformation_tools(mcp, get_unreal_connection)
+register_query_tools(mcp, get_unreal_connection)
+register_uv_tools(mcp, get_unreal_connection)
+register_material_tools(mcp, get_unreal_connection)
+register_rc_tools(mcp, get_unreal_connection)
+register_python_exec_tools(mcp, get_unreal_connection)
 
 
 # Run the server
 if __name__ == "__main__":
     logger.info("Starting Advanced MCP server with stdio transport")
-    mcp.run(transport='stdio') 
+    mcp.run(transport='stdio')

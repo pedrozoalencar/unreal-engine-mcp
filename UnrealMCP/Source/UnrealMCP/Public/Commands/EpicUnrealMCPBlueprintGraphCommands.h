@@ -55,4 +55,10 @@ private:
 
     // Rename function in Blueprint
     TSharedPtr<FJsonObject> HandleRenameFunction(const TSharedPtr<FJsonObject>& Params);
+
+    // Set pin default value on a node
+    TSharedPtr<FJsonObject> HandleSetPinValue(const TSharedPtr<FJsonObject>& Params);
+
+    // Add an event/function override (e.g. OnRebuildGeneratedMesh)
+    TSharedPtr<FJsonObject> HandleAddEventOverride(const TSharedPtr<FJsonObject>& Params);
 };

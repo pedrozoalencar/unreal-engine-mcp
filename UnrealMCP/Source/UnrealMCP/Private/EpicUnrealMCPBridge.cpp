@@ -55,6 +55,8 @@
 #include "Commands/EpicUnrealMCPBlueprintCommands.h"
 #include "Commands/EpicUnrealMCPBlueprintGraphCommands.h"
 #include "Commands/EpicUnrealMCPCommonUtils.h"
+#include "Commands/GeometryScript/UnrealMCPGeometryScriptCommands.h"
+#include "Commands/PythonExec/UnrealMCPPythonExecCommands.h"
 
 // Default settings
 #define MCP_SERVER_HOST "127.0.0.1"
@@ -65,6 +67,8 @@ UEpicUnrealMCPBridge::UEpicUnrealMCPBridge()
     EditorCommands = MakeShared<FEpicUnrealMCPEditorCommands>();
     BlueprintCommands = MakeShared<FEpicUnrealMCPBlueprintCommands>();
     BlueprintGraphCommands = MakeShared<FEpicUnrealMCPBlueprintGraphCommands>();
+    GeometryScriptCommands = MakeShared<FUnrealMCPGeometryScriptCommands>();
+    PythonExecCommands = MakeShared<FUnrealMCPPythonExecCommands>();
 }
 
 UEpicUnrealMCPBridge::~UEpicUnrealMCPBridge()
@@ -72,6 +76,8 @@ UEpicUnrealMCPBridge::~UEpicUnrealMCPBridge()
     EditorCommands.Reset();
     BlueprintCommands.Reset();
     BlueprintGraphCommands.Reset();
+    GeometryScriptCommands.Reset();
+    PythonExecCommands.Reset();
 }
 
 // Initialize subsystem
@@ -258,9 +264,22 @@ FString UEpicUnrealMCPBridge::ExecuteCommand(const FString& CommandType, const T
                      CommandType == TEXT("add_function_input") ||
                      CommandType == TEXT("add_function_output") ||
                      CommandType == TEXT("delete_function") ||
-                     CommandType == TEXT("rename_function"))
+                     CommandType == TEXT("rename_function") ||
+                     CommandType == TEXT("set_pin_value") ||
+                     CommandType == TEXT("add_event_override"))
             {
                 ResultJson = BlueprintGraphCommands->HandleCommand(CommandType, Params);
+            }
+            // Geometry Script Commands (all gs_* prefixed)
+            else if (CommandType.StartsWith(TEXT("gs_")))
+            {
+                ResultJson = GeometryScriptCommands->HandleCommand(CommandType, Params);
+            }
+            // Python Execution Commands
+            else if (CommandType == TEXT("execute_python") ||
+                     CommandType == TEXT("execute_python_file"))
+            {
+                ResultJson = PythonExecCommands->HandleCommand(CommandType, Params);
             }
             else
             {

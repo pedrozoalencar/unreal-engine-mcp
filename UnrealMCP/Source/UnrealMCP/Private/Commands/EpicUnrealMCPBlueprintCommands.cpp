@@ -1,5 +1,6 @@
 #include "Commands/EpicUnrealMCPBlueprintCommands.h"
 #include "Commands/EpicUnrealMCPCommonUtils.h"
+#include "UObject/UObjectIterator.h"
 #include "Engine/Blueprint.h"
 #include "Engine/BlueprintGeneratedClass.h"
 #include "Factories/BlueprintFactory.h"
@@ -136,44 +137,69 @@ TSharedPtr<FJsonObject> FEpicUnrealMCPBlueprintCommands::HandleCreateBlueprint(c
     if (!ParentClass.IsEmpty())
     {
         FString ClassName = ParentClass;
-        if (!ClassName.StartsWith(TEXT("A")))
-        {
-            ClassName = TEXT("A") + ClassName;
-        }
-        
-        // First try direct StaticClass lookup for common classes
+
+        // Search across multiple module paths
+        TArray<FString> ModulePaths = {
+            TEXT("/Script/Engine"),
+            TEXT("/Script/CoreUObject"),
+            TEXT("/Script/GeometryScriptingCore"),
+            TEXT("/Script/GeometryFramework"),
+            TEXT("/Script/ModelingComponents"),
+            TEXT("/Script/GameplayAbilities"),
+            TEXT("/Script/AIModule"),
+            TEXT("/Script/NavigationSystem")
+        };
+
         UClass* FoundClass = nullptr;
-        if (ClassName == TEXT("APawn"))
+
+        // Try exact name first (might be a full path like /Script/Engine.AActor)
+        FoundClass = Cast<UClass>(StaticFindObject(UClass::StaticClass(), nullptr, *ClassName));
+
+        // Try with 'A' prefix for Actor classes
+        if (!FoundClass)
         {
-            FoundClass = APawn::StaticClass();
-        }
-        else if (ClassName == TEXT("AActor"))
-        {
-            FoundClass = AActor::StaticClass();
-        }
-        else
-        {
-            // Try loading the class using LoadClass which is more reliable than FindObject
-            const FString ClassPath = FString::Printf(TEXT("/Script/Engine.%s"), *ClassName);
-            FoundClass = LoadClass<AActor>(nullptr, *ClassPath);
-            
-            if (!FoundClass)
+            FString WithA = ClassName.StartsWith(TEXT("A")) ? ClassName : TEXT("A") + ClassName;
+            for (const FString& ModulePath : ModulePaths)
             {
-                // Try alternate paths if not found
-                const FString GameClassPath = FString::Printf(TEXT("/Script/Game.%s"), *ClassName);
-                FoundClass = LoadClass<AActor>(nullptr, *GameClassPath);
+                FString FullPath = FString::Printf(TEXT("%s.%s"), *ModulePath, *WithA);
+                FoundClass = LoadClass<AActor>(nullptr, *FullPath);
+                if (FoundClass) break;
+            }
+        }
+
+        // Try original name without prefix
+        if (!FoundClass)
+        {
+            for (const FString& ModulePath : ModulePaths)
+            {
+                FString FullPath = FString::Printf(TEXT("%s.%s"), *ModulePath, *ClassName);
+                FoundClass = LoadClass<AActor>(nullptr, *FullPath);
+                if (FoundClass) break;
+            }
+        }
+
+        // Brute force: iterate all classes
+        if (!FoundClass)
+        {
+            for (TObjectIterator<UClass> It; It; ++It)
+            {
+                if (It->IsChildOf(AActor::StaticClass()) &&
+                    (It->GetName() == ClassName || It->GetName() == TEXT("A") + ClassName))
+                {
+                    FoundClass = *It;
+                    break;
+                }
             }
         }
 
         if (FoundClass)
         {
             SelectedParentClass = FoundClass;
-            UE_LOG(LogTemp, Log, TEXT("Successfully set parent class to '%s'"), *ClassName);
+            UE_LOG(LogTemp, Log, TEXT("Successfully set parent class to '%s' (%s)"), *ClassName, *FoundClass->GetPathName());
         }
         else
         {
-            UE_LOG(LogTemp, Warning, TEXT("Could not find specified parent class '%s' at paths: /Script/Engine.%s or /Script/Game.%s, defaulting to AActor"), 
-                *ClassName, *ClassName, *ClassName);
+            UE_LOG(LogTemp, Warning, TEXT("Could not find parent class '%s', defaulting to AActor"), *ClassName);
         }
     }
     
