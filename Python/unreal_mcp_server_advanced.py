@@ -83,6 +83,15 @@ from helpers.material_tools.material_ops import register_material_tools
 from helpers.level_tools.level_ops import register_level_tools
 from helpers.asset_tools.asset_ops import register_asset_tools
 
+# ============================================================================
+# High-Level Template Tools
+# ============================================================================
+from helpers.templates.material_templates import register_material_template_tools
+from helpers.templates.geometry_templates import register_geometry_template_tools
+from helpers.templates.scene_templates import register_scene_template_tools
+from helpers.templates.batch_tools import register_batch_tools
+from helpers.templates.introspection_tools import register_introspection_tools
+
 
 # Configure logging with more detailed format
 logging.basicConfig(
@@ -2881,6 +2890,13 @@ register_python_exec_tools(mcp, get_unreal_connection)
 register_material_tools(mcp, get_unreal_connection)
 register_level_tools(mcp, get_unreal_connection)
 register_asset_tools(mcp, get_unreal_connection)
+
+# High-level templates (compose multiple low-level tools)
+register_material_template_tools(mcp, get_unreal_connection)
+register_geometry_template_tools(mcp, get_unreal_connection)
+register_scene_template_tools(mcp, get_unreal_connection)
+register_batch_tools(mcp, get_unreal_connection)
+register_introspection_tools(mcp, get_unreal_connection)
 
 
 # Run the server

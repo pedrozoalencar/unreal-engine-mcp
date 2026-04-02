@@ -20,7 +20,8 @@ public class UnrealMCP : ModuleRules
 				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/PythonExec"),
 				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Material"),
 				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Level"),
-				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Asset")
+				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Asset"),
+				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Introspection")
 			}
 		);
 
@@ -34,7 +35,8 @@ public class UnrealMCP : ModuleRules
 				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/PythonExec"),
 				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Material"),
 				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Level"),
-				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Asset")
+				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Asset"),
+				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Introspection")
 			}
 		);
 		

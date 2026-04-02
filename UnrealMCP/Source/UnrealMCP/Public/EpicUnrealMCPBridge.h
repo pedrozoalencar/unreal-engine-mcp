@@ -16,6 +16,7 @@
 #include "Commands/Material/UnrealMCPMaterialCommands.h"
 #include "Commands/Level/UnrealMCPLevelCommands.h"
 #include "Commands/Asset/UnrealMCPAssetCommands.h"
+#include "Commands/Introspection/UnrealMCPIntrospectionCommands.h"
 #include "EpicUnrealMCPBridge.generated.h"
 
 class FMCPServerRunnable;
@@ -47,6 +48,9 @@ public:
 	// Command execution
 	FString ExecuteCommand(const FString& CommandType, const TSharedPtr<FJsonObject>& Params);
 
+	// Route a single command and return the result JSON object (used by ExecuteCommand and batch_execute)
+	TSharedPtr<FJsonObject> RouteCommand(const FString& CommandType, const TSharedPtr<FJsonObject>& Params);
+
 private:
 	// Server state
 	bool bIsRunning;
@@ -67,4 +71,5 @@ private:
 	TSharedPtr<FUnrealMCPMaterialCommands> MaterialCommands;
 	TSharedPtr<FUnrealMCPLevelCommands> LevelCommands;
 	TSharedPtr<FUnrealMCPAssetCommands> AssetCommands;
+	TSharedPtr<FUnrealMCPIntrospectionCommands> IntrospectionCommands;
 }; 

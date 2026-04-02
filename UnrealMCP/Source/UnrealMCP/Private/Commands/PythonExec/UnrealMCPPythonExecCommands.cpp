@@ -46,10 +46,54 @@ TSharedPtr<FJsonObject> FUnrealMCPPythonExecCommands::HandleExecutePython(const 
 		return MakeErrorResponse(TEXT("Python is not available in this editor session."));
 	}
 
-	bool bSuccess = PythonPlugin->ExecPythonCommand(*Code);
+	// Write user code to a temp file to avoid escaping issues
+	FString TempCodeFile = FPaths::ProjectSavedDir() / TEXT("mcp_code.py");
+	FString TempOutputFile = FPaths::ProjectSavedDir() / TEXT("mcp_output.txt");
+	FString TempErrorFile = FPaths::ProjectSavedDir() / TEXT("mcp_errors.txt");
+
+	// Normalize paths to forward slashes for Python
+	TempCodeFile = TempCodeFile.Replace(TEXT("\\"), TEXT("/"));
+	TempOutputFile = TempOutputFile.Replace(TEXT("\\"), TEXT("/"));
+	TempErrorFile = TempErrorFile.Replace(TEXT("\\"), TEXT("/"));
+
+	FFileHelper::SaveStringToFile(Code, *TempCodeFile, FFileHelper::EEncodingOptions::ForceUTF8WithoutBOM);
+
+	// Build wrapper script that captures stdout/stderr
+	FString WrapperCode = FString::Printf(TEXT(
+		"import sys, io\n"
+		"_mcp_out, _mcp_err = io.StringIO(), io.StringIO()\n"
+		"_mcp_old_out, _mcp_old_err = sys.stdout, sys.stderr\n"
+		"sys.stdout, sys.stderr = _mcp_out, _mcp_err\n"
+		"try:\n"
+		"    with open(r'%s', 'r', encoding='utf-8') as _mcp_f:\n"
+		"        exec(compile(_mcp_f.read(), '<mcp>', 'exec'))\n"
+		"except Exception as _mcp_e:\n"
+		"    print(f'Error: {_mcp_e}', file=_mcp_err)\n"
+		"finally:\n"
+		"    sys.stdout, sys.stderr = _mcp_old_out, _mcp_old_err\n"
+		"with open(r'%s', 'w', encoding='utf-8') as _mcp_f:\n"
+		"    _mcp_f.write(_mcp_out.getvalue())\n"
+		"with open(r'%s', 'w', encoding='utf-8') as _mcp_f:\n"
+		"    _mcp_f.write(_mcp_err.getvalue())\n"
+	), *TempCodeFile, *TempOutputFile, *TempErrorFile);
+
+	bool bSuccess = PythonPlugin->ExecPythonCommand(*WrapperCode);
+
+	// Read captured output
+	FString CapturedOutput, CapturedErrors;
+	FFileHelper::LoadFileToString(CapturedOutput, *TempOutputFile);
+	FFileHelper::LoadFileToString(CapturedErrors, *TempErrorFile);
+
+	// If the wrapper itself failed and we have errors captured, treat as failure
+	if (!CapturedErrors.IsEmpty())
+	{
+		bSuccess = false;
+	}
 
 	TSharedPtr<FJsonObject> Result = MakeShareable(new FJsonObject);
 	Result->SetBoolField(TEXT("success"), bSuccess);
+	Result->SetStringField(TEXT("output"), CapturedOutput);
+	Result->SetStringField(TEXT("errors"), CapturedErrors);
 	Result->SetStringField(TEXT("message"), bSuccess ? TEXT("Python code executed successfully") : TEXT("Python execution failed"));
 	return Result;
 }
