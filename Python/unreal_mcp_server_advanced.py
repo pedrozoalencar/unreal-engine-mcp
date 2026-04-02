@@ -92,6 +92,21 @@ from helpers.templates.scene_templates import register_scene_template_tools
 from helpers.templates.batch_tools import register_batch_tools
 from helpers.templates.introspection_tools import register_introspection_tools
 
+# ============================================================================
+# UE2 Action-Based Tools (Unity MCP 2.0-like)
+# ============================================================================
+from helpers.ue2.ue_session import register_session_tools
+from helpers.ue2.ue_assets import register_assets_tools
+from helpers.ue2.ue_scene import register_scene_tools
+from helpers.ue2.ue_blueprints import register_blueprint_tools as register_ue2_blueprint_tools
+from helpers.ue2.ue_materials import register_material_tools as register_ue2_material_tools
+from helpers.ue2.ue_geometry import register_geometry_tools as register_ue2_geometry_tools
+from helpers.ue2.ue_playtest import register_playtest_tools
+from helpers.ue2.ue_capture import register_capture_tools
+from helpers.ue2.ue_console import register_console_tools
+from helpers.ue2.ue_inspect import register_inspect_tools
+from helpers.ue2.ue_templates import register_template_tools
+
 
 # Configure logging with more detailed format
 logging.basicConfig(
@@ -2897,6 +2912,19 @@ register_geometry_template_tools(mcp, get_unreal_connection)
 register_scene_template_tools(mcp, get_unreal_connection)
 register_batch_tools(mcp, get_unreal_connection)
 register_introspection_tools(mcp, get_unreal_connection)
+
+# UE2 Action-Based Tools (Unity MCP 2.0-like consolidated tools)
+register_session_tools(mcp, get_unreal_connection)
+register_assets_tools(mcp, get_unreal_connection)
+register_scene_tools(mcp, get_unreal_connection)
+register_ue2_blueprint_tools(mcp, get_unreal_connection)
+register_ue2_material_tools(mcp, get_unreal_connection)
+register_ue2_geometry_tools(mcp, get_unreal_connection)
+register_playtest_tools(mcp, get_unreal_connection)
+register_capture_tools(mcp, get_unreal_connection)
+register_console_tools(mcp, get_unreal_connection)
+register_inspect_tools(mcp, get_unreal_connection)
+register_template_tools(mcp, get_unreal_connection)
 
 
 # Run the server
