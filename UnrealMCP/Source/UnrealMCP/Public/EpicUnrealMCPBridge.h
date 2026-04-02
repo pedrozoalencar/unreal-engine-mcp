@@ -13,6 +13,9 @@
 #include "Commands/EpicUnrealMCPBlueprintGraphCommands.h"
 #include "Commands/GeometryScript/UnrealMCPGeometryScriptCommands.h"
 #include "Commands/PythonExec/UnrealMCPPythonExecCommands.h"
+#include "Commands/Material/UnrealMCPMaterialCommands.h"
+#include "Commands/Level/UnrealMCPLevelCommands.h"
+#include "Commands/Asset/UnrealMCPAssetCommands.h"
 #include "EpicUnrealMCPBridge.generated.h"
 
 class FMCPServerRunnable;
@@ -61,4 +64,7 @@ private:
 	TSharedPtr<FEpicUnrealMCPBlueprintGraphCommands> BlueprintGraphCommands;
 	TSharedPtr<FUnrealMCPGeometryScriptCommands> GeometryScriptCommands;
 	TSharedPtr<FUnrealMCPPythonExecCommands> PythonExecCommands;
+	TSharedPtr<FUnrealMCPMaterialCommands> MaterialCommands;
+	TSharedPtr<FUnrealMCPLevelCommands> LevelCommands;
+	TSharedPtr<FUnrealMCPAssetCommands> AssetCommands;
 }; 

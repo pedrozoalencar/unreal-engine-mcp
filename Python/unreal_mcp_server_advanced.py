@@ -76,6 +76,13 @@ from helpers.remote_control.rc_properties import register_rc_tools
 # ============================================================================
 from helpers.python_exec.script_runner import register_python_exec_tools
 
+# ============================================================================
+# Material, Level, Asset Tools
+# ============================================================================
+from helpers.material_tools.material_ops import register_material_tools
+from helpers.level_tools.level_ops import register_level_tools
+from helpers.asset_tools.asset_ops import register_asset_tools
+
 
 # Configure logging with more detailed format
 logging.basicConfig(
@@ -2871,6 +2878,9 @@ register_uv_tools(mcp, get_unreal_connection)
 register_material_tools(mcp, get_unreal_connection)
 register_rc_tools(mcp, get_unreal_connection)
 register_python_exec_tools(mcp, get_unreal_connection)
+register_material_tools(mcp, get_unreal_connection)
+register_level_tools(mcp, get_unreal_connection)
+register_asset_tools(mcp, get_unreal_connection)
 
 
 # Run the server

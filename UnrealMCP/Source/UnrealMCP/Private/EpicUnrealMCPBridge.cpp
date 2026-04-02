@@ -57,6 +57,9 @@
 #include "Commands/EpicUnrealMCPCommonUtils.h"
 #include "Commands/GeometryScript/UnrealMCPGeometryScriptCommands.h"
 #include "Commands/PythonExec/UnrealMCPPythonExecCommands.h"
+#include "Commands/Material/UnrealMCPMaterialCommands.h"
+#include "Commands/Level/UnrealMCPLevelCommands.h"
+#include "Commands/Asset/UnrealMCPAssetCommands.h"
 
 // Default settings
 #define MCP_SERVER_HOST "127.0.0.1"
@@ -69,6 +72,9 @@ UEpicUnrealMCPBridge::UEpicUnrealMCPBridge()
     BlueprintGraphCommands = MakeShared<FEpicUnrealMCPBlueprintGraphCommands>();
     GeometryScriptCommands = MakeShared<FUnrealMCPGeometryScriptCommands>();
     PythonExecCommands = MakeShared<FUnrealMCPPythonExecCommands>();
+    MaterialCommands = MakeShared<FUnrealMCPMaterialCommands>();
+    LevelCommands = MakeShared<FUnrealMCPLevelCommands>();
+    AssetCommands = MakeShared<FUnrealMCPAssetCommands>();
 }
 
 UEpicUnrealMCPBridge::~UEpicUnrealMCPBridge()
@@ -78,6 +84,9 @@ UEpicUnrealMCPBridge::~UEpicUnrealMCPBridge()
     BlueprintGraphCommands.Reset();
     GeometryScriptCommands.Reset();
     PythonExecCommands.Reset();
+    MaterialCommands.Reset();
+    LevelCommands.Reset();
+    AssetCommands.Reset();
 }
 
 // Initialize subsystem
@@ -280,6 +289,21 @@ FString UEpicUnrealMCPBridge::ExecuteCommand(const FString& CommandType, const T
                      CommandType == TEXT("execute_python_file"))
             {
                 ResultJson = PythonExecCommands->HandleCommand(CommandType, Params);
+            }
+            // Material Commands (all mat_* prefixed)
+            else if (CommandType.StartsWith(TEXT("mat_")))
+            {
+                ResultJson = MaterialCommands->HandleCommand(CommandType, Params);
+            }
+            // Level Commands (all level_* prefixed)
+            else if (CommandType.StartsWith(TEXT("level_")))
+            {
+                ResultJson = LevelCommands->HandleCommand(CommandType, Params);
+            }
+            // Asset Commands (all asset_* prefixed)
+            else if (CommandType.StartsWith(TEXT("asset_")))
+            {
+                ResultJson = AssetCommands->HandleCommand(CommandType, Params);
             }
             else
             {
