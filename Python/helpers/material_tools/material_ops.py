@@ -30,7 +30,7 @@ def register_material_tools(mcp, get_connection):
         """Set a material property by name.
         property_name: blend_mode, shading_model, two_sided, translucency_lighting_mode, etc.
         property_value: the value (string for enums, bool for flags)."""
-        return get_connection().send_command("mat_set_property", {
+        return get_connection().send_command("mat_set_material_property", {
             "asset_path": asset_path, "property_name": property_name,
             "property_value": str(property_value)
         })
@@ -38,7 +38,7 @@ def register_material_tools(mcp, get_connection):
     @mcp.tool()
     def mat_get_info(asset_path: str) -> Dict[str, Any]:
         """Get material info: settings, list of expression nodes with classes and names."""
-        return get_connection().send_command("mat_get_info", {"asset_path": asset_path})
+        return get_connection().send_command("mat_get_material_info", {"asset_path": asset_path})
 
     @mcp.tool()
     def mat_add_expression(
@@ -101,7 +101,7 @@ def register_material_tools(mcp, get_connection):
         target_index: index of the target expression node
         target_input: name of the input pin on the target (e.g. 'DiffuseAlbedo', 'F0', 'Roughness')
         Use mat_list_pins to discover available pin names."""
-        return get_connection().send_command("mat_connect", {
+        return get_connection().send_command("mat_connect_expressions", {
             "asset_path": asset_path, "source_index": source_index,
             "source_output": source_output, "target_index": target_index,
             "target_input": target_input
@@ -143,7 +143,7 @@ def register_material_tools(mcp, get_connection):
     @mcp.tool()
     def mat_compile(asset_path: str) -> Dict[str, Any]:
         """Recompile and save a material. Call after making changes."""
-        return get_connection().send_command("mat_compile", {"asset_path": asset_path})
+        return get_connection().send_command("mat_compile_material", {"asset_path": asset_path})
 
     @mcp.tool()
     def mat_apply_to_actor(
@@ -152,7 +152,7 @@ def register_material_tools(mcp, get_connection):
         slot_index: int = 0
     ) -> Dict[str, Any]:
         """Apply a material to an actor's mesh component at the given material slot."""
-        return get_connection().send_command("mat_apply_to_actor", {
+        return get_connection().send_command("mat_apply_material_to_actor", {
             "asset_path": asset_path, "actor_name": actor_name, "slot_index": slot_index
         })
 
@@ -163,6 +163,6 @@ def register_material_tools(mcp, get_connection):
         input_name: str
     ) -> Dict[str, Any]:
         """Disconnect an input pin on an expression node."""
-        return get_connection().send_command("mat_disconnect", {
+        return get_connection().send_command("mat_disconnect_expression", {
             "asset_path": asset_path, "node_index": node_index, "input_name": input_name
         })

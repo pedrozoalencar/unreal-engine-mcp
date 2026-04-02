@@ -290,20 +290,23 @@ FString UEpicUnrealMCPBridge::ExecuteCommand(const FString& CommandType, const T
             {
                 ResultJson = PythonExecCommands->HandleCommand(CommandType, Params);
             }
-            // Material Commands (all mat_* prefixed)
+            // Material Commands (all mat_* prefixed) - strip prefix for internal routing
             else if (CommandType.StartsWith(TEXT("mat_")))
             {
-                ResultJson = MaterialCommands->HandleCommand(CommandType, Params);
+                FString SubCommand = CommandType.RightChop(4); // Remove "mat_"
+                ResultJson = MaterialCommands->HandleCommand(SubCommand, Params);
             }
-            // Level Commands (all level_* prefixed)
+            // Level Commands (all level_* prefixed) - strip prefix for internal routing
             else if (CommandType.StartsWith(TEXT("level_")))
             {
-                ResultJson = LevelCommands->HandleCommand(CommandType, Params);
+                FString SubCommand = CommandType.RightChop(6); // Remove "level_"
+                ResultJson = LevelCommands->HandleCommand(SubCommand, Params);
             }
-            // Asset Commands (all asset_* prefixed)
+            // Asset Commands (all asset_* prefixed) - strip prefix for internal routing
             else if (CommandType.StartsWith(TEXT("asset_")))
             {
-                ResultJson = AssetCommands->HandleCommand(CommandType, Params);
+                FString SubCommand = CommandType.RightChop(6); // Remove "asset_"
+                ResultJson = AssetCommands->HandleCommand(SubCommand, Params);
             }
             else
             {
