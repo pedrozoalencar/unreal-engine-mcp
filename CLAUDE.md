@@ -2,7 +2,9 @@
 
 ## Quick Reference
 
-This project is the **Ultimate Unreal Engine MCP Server** — a fork of flopperam/unreal-engine-mcp extended with ~150 tools for full editor control via Claude Code. It targets **UE5.7** with Geometry Script, Substrate materials, and Blueprint graph editing.
+This project is the **Ultimate Unreal Engine MCP Server** — a fork of flopperam/unreal-engine-mcp extended with **155 tools** for full editor control via Claude Code. It targets **UE5.7** with Geometry Script, Substrate materials, and Blueprint graph editing.
+
+**E2E Test Results:** 23/24 UE2 actions verified working (96% pass rate). Average latency: ~220ms.
 
 ## Architecture
 
@@ -82,14 +84,27 @@ Always prefer `ue_*` tools over legacy tools. They have standardized responses (
 - **Blueprint CallFunction**: The resolver searches ALL BlueprintFunctionLibrary classes. For member functions (like AllocateComputeMesh), pass `target_blueprint="GeneratedDynamicMeshActor"`.
 - **Glass project must be open** for the TCP connection (port 55557) to work.
 
-## Performance Benchmarks
+## Performance Benchmarks (E2E Verified)
 
-| Operation | Typical Latency |
-|-----------|----------------|
-| ping | ~90ms |
-| get_context | ~300ms |
-| list_actors | ~200ms |
-| get_properties | ~100ms |
-| material list_pins | ~175ms |
-| inspect_class | ~200ms |
-| batch_execute (5 ops) | ~500ms |
+| Operation | Latency | Status |
+|-----------|---------|--------|
+| ping | 93ms | OK |
+| get_context | 300ms | OK |
+| spawn_actor (blueprint) | 312ms | OK |
+| get_properties | 100ms | OK |
+| screenshot (2773x1833) | 712ms | OK |
+| set_camera | 137ms | OK |
+| focus_actor | 257ms | OK |
+| material list_pins | 176ms | OK |
+| material connect | 125ms | OK |
+| inspect_class | 205ms | OK |
+| inspect_enum | 92ms | OK |
+| PIE play | 330ms | OK |
+| PIE stop | 115ms | OK |
+| begin_transaction | 38ms | OK |
+| save_level | 323ms | OK |
+| analyze_graph | 174ms | OK |
+| **Average** | **~220ms** | **96% pass** |
+
+### Known Limitation
+- `ue_capture(screenshot)` requires `file_path` parameter (C++ handler doesn't generate default path)
