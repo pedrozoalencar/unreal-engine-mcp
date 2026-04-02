@@ -39,14 +39,21 @@ FUnrealMCPGeometryScriptCommands::~FUnrealMCPGeometryScriptCommands()
 		}
 	}
 	MeshRegistry.Empty();
+	MeshLastAccessTime.Empty();
 }
 
 // ============================================================================
 // Helpers
 // ============================================================================
 
+void FUnrealMCPGeometryScriptCommands::UpdateMeshAccess(const FString& Name)
+{
+	MeshLastAccessTime.Add(Name, FPlatformTime::Seconds());
+}
+
 UDynamicMesh* FUnrealMCPGeometryScriptCommands::GetOrCreateMesh(const FString& Name)
 {
+	UpdateMeshAccess(Name);
 	TObjectPtr<UDynamicMesh>* Found = MeshRegistry.Find(Name);
 	if (Found && *Found)
 	{
@@ -63,6 +70,7 @@ UDynamicMesh* FUnrealMCPGeometryScriptCommands::FindMesh(const FString& Name)
 	TObjectPtr<UDynamicMesh>* Found = MeshRegistry.Find(Name);
 	if (Found && *Found)
 	{
+		UpdateMeshAccess(Name);
 		return Found->Get();
 	}
 	return nullptr;
@@ -212,6 +220,8 @@ TSharedPtr<FJsonObject> FUnrealMCPGeometryScriptCommands::HandleCommand(const FS
 
 	if (CommandType == TEXT("gs_append_mesh")) return HandleAppendMesh(Params);
 
+	if (CommandType == TEXT("gs_cleanup_meshes")) return HandleCleanupMeshes(Params);
+
 	return MakeErrorResponse(FString::Printf(TEXT("Unknown geometry script command: %s"), *CommandType));
 }
 
@@ -236,6 +246,7 @@ TSharedPtr<FJsonObject> FUnrealMCPGeometryScriptCommands::HandleReleaseMesh(cons
 		(*Found)->RemoveFromRoot();
 		MeshRegistry.Remove(MeshName);
 	}
+	MeshLastAccessTime.Remove(MeshName);
 	TSharedPtr<FJsonObject> Result = MakeShareable(new FJsonObject);
 	Result->SetBoolField(TEXT("success"), true);
 	Result->SetStringField(TEXT("message"), FString::Printf(TEXT("Released mesh '%s'"), *MeshName));
@@ -1382,5 +1393,43 @@ TSharedPtr<FJsonObject> FUnrealMCPGeometryScriptCommands::HandleIsPointInside(co
 	Result->SetNumberField(TEXT("point_x"), Point.X);
 	Result->SetNumberField(TEXT("point_y"), Point.Y);
 	Result->SetNumberField(TEXT("point_z"), Point.Z);
+	return Result;
+}
+
+// ============================================================================
+// Mesh Cleanup
+// ============================================================================
+
+TSharedPtr<FJsonObject> FUnrealMCPGeometryScriptCommands::HandleCleanupMeshes(const TSharedPtr<FJsonObject>& Params)
+{
+	double MaxAge = Params->HasField(TEXT("max_age_seconds")) ? Params->GetNumberField(TEXT("max_age_seconds")) : 300.0;
+	double Now = FPlatformTime::Seconds();
+
+	TArray<FString> ToRemove;
+	for (auto& Pair : MeshLastAccessTime)
+	{
+		if ((Now - Pair.Value) > MaxAge)
+		{
+			ToRemove.Add(Pair.Key);
+		}
+	}
+
+	TArray<TSharedPtr<FJsonValue>> ReleasedNames;
+	for (const FString& Name : ToRemove)
+	{
+		if (TObjectPtr<UDynamicMesh>* Found = MeshRegistry.Find(Name))
+		{
+			if (*Found) (*Found)->RemoveFromRoot();
+			MeshRegistry.Remove(Name);
+		}
+		MeshLastAccessTime.Remove(Name);
+		ReleasedNames.Add(MakeShareable(new FJsonValueString(Name)));
+	}
+
+	TSharedPtr<FJsonObject> Result = MakeShareable(new FJsonObject);
+	Result->SetBoolField(TEXT("success"), true);
+	Result->SetNumberField(TEXT("released_count"), ToRemove.Num());
+	Result->SetNumberField(TEXT("remaining_count"), MeshRegistry.Num());
+	Result->SetArrayField(TEXT("released_names"), ReleasedNames);
 	return Result;
 }

@@ -24,6 +24,10 @@
 #include "Components/DynamicMeshComponent.h"
 #include "UObject/UObjectIterator.h"
 #include "EngineUtils.h"
+#include "Materials/MaterialInstanceConstant.h"
+#include "Factories/MaterialInstanceConstantFactoryNew.h"
+#include "Engine/Texture.h"
+#include "Engine/Texture2D.h"
 
 FUnrealMCPMaterialCommands::FUnrealMCPMaterialCommands()
 {
@@ -119,6 +123,9 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleCommand(const FString&
 	if (CommandType == TEXT("set_expression_value")) return HandleSetExpressionValue(Params);
 	if (CommandType == TEXT("compile_material")) return HandleCompileMaterial(Params);
 	if (CommandType == TEXT("apply_material_to_actor")) return HandleApplyMaterialToActor(Params);
+
+	if (CommandType == TEXT("create_material_instance")) return HandleCreateMaterialInstance(Params);
+	if (CommandType == TEXT("set_instance_params")) return HandleSetInstanceParams(Params);
 
 	return MakeErrorResponse(FString::Printf(TEXT("Unknown material command: %s"), *CommandType));
 }
@@ -1255,5 +1262,122 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleApplyMaterialToActor(c
 	Result->SetBoolField(TEXT("success"), true);
 	Result->SetStringField(TEXT("message"), FString::Printf(TEXT("Applied material '%s' to actor '%s' at slot %d"),
 		*AssetPath, *ActorName, SlotIndex));
+	return Result;
+}
+
+// ============================================================================
+// Material Instances
+// ============================================================================
+
+TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleCreateMaterialInstance(const TSharedPtr<FJsonObject>& Params)
+{
+	FString ParentPath = Params->GetStringField(TEXT("parent_path"));
+	FString InstancePath = Params->GetStringField(TEXT("instance_path"));
+
+	if (ParentPath.IsEmpty())
+	{
+		return MakeErrorResponse(TEXT("parent_path is required"));
+	}
+	if (InstancePath.IsEmpty())
+	{
+		return MakeErrorResponse(TEXT("instance_path is required"));
+	}
+
+	UMaterialInterface* ParentMaterial = LoadObject<UMaterialInterface>(nullptr, *ParentPath);
+	if (!ParentMaterial)
+	{
+		return MakeErrorResponse(FString::Printf(TEXT("Could not load parent material: %s"), *ParentPath));
+	}
+
+	UMaterialInstanceConstantFactoryNew* Factory = NewObject<UMaterialInstanceConstantFactoryNew>();
+	Factory->InitialParent = ParentMaterial;
+
+	FString PackageName = FPackageName::ObjectPathToPackageName(InstancePath);
+	FString AssetName = FPackageName::GetLongPackageAssetName(PackageName);
+
+	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+	UObject* NewAsset = AssetTools.CreateAsset(AssetName, FPackageName::GetLongPackagePath(PackageName), UMaterialInstanceConstant::StaticClass(), Factory);
+
+	if (!NewAsset)
+	{
+		return MakeErrorResponse(TEXT("Failed to create material instance"));
+	}
+
+	TSharedPtr<FJsonObject> Result = MakeShareable(new FJsonObject);
+	Result->SetBoolField(TEXT("success"), true);
+	Result->SetStringField(TEXT("instance_path"), InstancePath);
+	Result->SetStringField(TEXT("parent_path"), ParentPath);
+	return Result;
+}
+
+TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleSetInstanceParams(const TSharedPtr<FJsonObject>& Params)
+{
+	FString InstancePath = Params->GetStringField(TEXT("instance_path"));
+	if (InstancePath.IsEmpty())
+	{
+		return MakeErrorResponse(TEXT("instance_path is required"));
+	}
+
+	UMaterialInstanceConstant* Instance = LoadObject<UMaterialInstanceConstant>(nullptr, *InstancePath);
+	if (!Instance)
+	{
+		return MakeErrorResponse(FString::Printf(TEXT("Could not load material instance: %s"), *InstancePath));
+	}
+
+	int32 ScalarsSet = 0;
+	int32 VectorsSet = 0;
+	int32 TexturesSet = 0;
+
+	// Set scalars
+	const TSharedPtr<FJsonObject>* ScalarsObj;
+	if (Params->TryGetObjectField(TEXT("scalars"), ScalarsObj))
+	{
+		for (auto& Pair : (*ScalarsObj)->Values)
+		{
+			FMaterialParameterInfo ParamInfo(FName(*Pair.Key));
+			Instance->SetScalarParameterValueEditorOnly(ParamInfo, (float)Pair.Value->AsNumber());
+			ScalarsSet++;
+		}
+	}
+
+	// Set vectors
+	const TSharedPtr<FJsonObject>* VectorsObj;
+	if (Params->TryGetObjectField(TEXT("vectors"), VectorsObj))
+	{
+		for (auto& Pair : (*VectorsObj)->Values)
+		{
+			const TArray<TSharedPtr<FJsonValue>>& Arr = Pair.Value->AsArray();
+			FLinearColor Color(Arr[0]->AsNumber(), Arr[1]->AsNumber(), Arr[2]->AsNumber(), Arr.Num() > 3 ? Arr[3]->AsNumber() : 1.0f);
+			FMaterialParameterInfo ParamInfo(FName(*Pair.Key));
+			Instance->SetVectorParameterValueEditorOnly(ParamInfo, Color);
+			VectorsSet++;
+		}
+	}
+
+	// Set textures
+	const TSharedPtr<FJsonObject>* TexturesObj;
+	if (Params->TryGetObjectField(TEXT("textures"), TexturesObj))
+	{
+		for (auto& Pair : (*TexturesObj)->Values)
+		{
+			UTexture* Tex = LoadObject<UTexture>(nullptr, *Pair.Value->AsString());
+			if (Tex)
+			{
+				FMaterialParameterInfo ParamInfo(FName(*Pair.Key));
+				Instance->SetTextureParameterValueEditorOnly(ParamInfo, Tex);
+				TexturesSet++;
+			}
+		}
+	}
+
+	Instance->PostEditChange();
+	Instance->MarkPackageDirty();
+
+	TSharedPtr<FJsonObject> Result = MakeShareable(new FJsonObject);
+	Result->SetBoolField(TEXT("success"), true);
+	Result->SetStringField(TEXT("instance_path"), InstancePath);
+	Result->SetNumberField(TEXT("scalars_set"), ScalarsSet);
+	Result->SetNumberField(TEXT("vectors_set"), VectorsSet);
+	Result->SetNumberField(TEXT("textures_set"), TexturesSet);
 	return Result;
 }

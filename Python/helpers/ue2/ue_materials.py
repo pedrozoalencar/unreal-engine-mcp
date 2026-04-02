@@ -241,115 +241,28 @@ def register_material_tools(mcp, get_connection):
             # ------------------------------------------------------------------
             elif action == "create_instance":
                 if not parent_path:
-                    return UEResponse.error("E_INVALID_ARGUMENT", "Parameter 'parent_path' is required for create_instance", TOOL)
+                    return UEResponse.error("E_INVALID_ARGUMENT", "Parameter 'parent_path' is required", TOOL)
                 if not instance_path:
-                    return UEResponse.error("E_INVALID_ARGUMENT", "Parameter 'instance_path' is required for create_instance", TOOL)
-
-                py_code = f"""
-import unreal
-import json
-
-parent_path = '{parent_path}'
-instance_path = '{instance_path}'
-
-# Load parent material
-parent_mat = unreal.EditorAssetLibrary.load_asset(parent_path)
-if parent_mat is None:
-    print(json.dumps({{"error": "Parent material not found: " + parent_path}}))
-else:
-    # Create the material instance factory
-    factory = unreal.MaterialInstanceConstantFactoryNew()
-    factory.set_editor_property('initial_parent', parent_mat)
-
-    # Derive package and asset name
-    parts = instance_path.rsplit('/', 1)
-    package_path = parts[0] if len(parts) > 1 else '/Game'
-    asset_name = parts[-1]
-
-    # Create the asset
-    asset_tools = unreal.AssetToolsHelpers.get_asset_tools()
-    mi = asset_tools.create_asset(asset_name, package_path, unreal.MaterialInstanceConstant, factory)
-
-    if mi is not None:
-        unreal.EditorAssetLibrary.save_asset(instance_path, only_if_is_dirty=False)
-        print(json.dumps({{"created": instance_path, "parent": parent_path}}))
-    else:
-        print(json.dumps({{"error": "Failed to create material instance at " + instance_path}}))
-""".strip()
-                result = cmd(conn, "execute_python", {"code": py_code})
+                    return UEResponse.error("E_INVALID_ARGUMENT", "Parameter 'instance_path' is required", TOOL)
+                # Native C++ handler
+                result = cmd(conn, "mat_create_material_instance", {
+                    "parent_path": parent_path, "instance_path": instance_path
+                })
                 data = extract_data(result)
-
-                output = data if isinstance(data, str) else data.get("output", "") if isinstance(data, dict) else str(data)
-                try:
-                    parsed = _json.loads(output.strip().split("\n")[-1])
-                except Exception:
-                    parsed = {"raw_output": output}
-
-                if "error" in parsed:
-                    return UEResponse.error("E_OPERATION_FAILED", parsed["error"], TOOL)
-                return UEResponse.ok(parsed, tool=TOOL, duration_ms=(time.time() - t0) * 1000)
+                return UEResponse.ok(data, tool=TOOL, duration_ms=(time.time() - t0) * 1000)
 
             # ------------------------------------------------------------------
             elif action == "set_instance_params":
                 if not instance_path:
-                    return UEResponse.error("E_INVALID_ARGUMENT", "Parameter 'instance_path' is required for set_instance_params", TOOL)
-
-                scalars_dict = scalars or {}
-                vectors_dict = vectors or {}
-                textures_dict = textures or {}
-
-                scalar_lines = ""
-                for pname, pval in scalars_dict.items():
-                    scalar_lines += f"    mi.set_scalar_parameter_value('{pname}', {pval})\n"
-                    scalar_lines += f"    results['scalars']['{pname}'] = {pval}\n"
-
-                vector_lines = ""
-                for pname, pval in vectors_dict.items():
-                    r, g, b = pval[0], pval[1], pval[2]
-                    a = pval[3] if len(pval) > 3 else 1.0
-                    vector_lines += f"    color = unreal.LinearColor(r={r}, g={g}, b={b}, a={a})\n"
-                    vector_lines += f"    mi.set_vector_parameter_value('{pname}', color)\n"
-                    vector_lines += f"    results['vectors']['{pname}'] = {pval}\n"
-
-                texture_lines = ""
-                for pname, pval in textures_dict.items():
-                    texture_lines += f"    tex = unreal.EditorAssetLibrary.load_asset('{pval}')\n"
-                    texture_lines += f"    if tex:\n"
-                    texture_lines += f"        mi.set_texture_parameter_value('{pname}', tex)\n"
-                    texture_lines += f"        results['textures']['{pname}'] = '{pval}'\n"
-                    texture_lines += f"    else:\n"
-                    texture_lines += f"        results['warnings'].append('Texture not found: {pval}')\n"
-
-                py_code = f"""
-import unreal
-import json
-
-instance_path = '{instance_path}'
-mi = unreal.EditorAssetLibrary.load_asset(instance_path)
-results = {{"scalars": {{}}, "vectors": {{}}, "textures": {{}}, "warnings": []}}
-
-if mi is None:
-    print(json.dumps({{"error": "Material instance not found: " + instance_path}}))
-else:
-{scalar_lines}{vector_lines}{texture_lines}    unreal.EditorAssetLibrary.save_asset(instance_path, only_if_is_dirty=False)
-    results['instance_path'] = instance_path
-    print(json.dumps(results))
-""".strip()
-                result = cmd(conn, "execute_python", {"code": py_code})
+                    return UEResponse.error("E_INVALID_ARGUMENT", "Parameter 'instance_path' is required", TOOL)
+                # Native C++ handler
+                params = {"instance_path": instance_path}
+                if scalars: params["scalars"] = scalars
+                if vectors: params["vectors"] = vectors
+                if textures: params["textures"] = textures
+                result = cmd(conn, "mat_set_instance_params", params)
                 data = extract_data(result)
-
-                output = data if isinstance(data, str) else data.get("output", "") if isinstance(data, dict) else str(data)
-                try:
-                    parsed = _json.loads(output.strip().split("\n")[-1])
-                except Exception:
-                    parsed = {"raw_output": output}
-
-                if "error" in parsed:
-                    return UEResponse.error("E_OPERATION_FAILED", parsed["error"], TOOL)
-
-                warnings = parsed.pop("warnings", [])
-                return UEResponse.ok(parsed, tool=TOOL, warnings=warnings if warnings else None,
-                                     duration_ms=(time.time() - t0) * 1000)
+                return UEResponse.ok(data, tool=TOOL, duration_ms=(time.time() - t0) * 1000)
 
             # ------------------------------------------------------------------
             else:

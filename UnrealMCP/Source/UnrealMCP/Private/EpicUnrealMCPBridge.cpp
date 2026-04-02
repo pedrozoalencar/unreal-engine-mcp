@@ -273,6 +273,64 @@ TSharedPtr<FJsonObject> UEpicUnrealMCPBridge::RouteCommand(const FString& Comman
             ResponseJson->SetObjectField(TEXT("result"), ResultJson);
             return ResponseJson;
         }
+        // Scoped Transaction - wraps sub-commands in an undo transaction
+        else if (CommandType == TEXT("scoped_transaction"))
+        {
+            FString Label = Params->HasField(TEXT("label")) ? Params->GetStringField(TEXT("label")) : TEXT("MCP Scoped Transaction");
+            const TArray<TSharedPtr<FJsonValue>>& Commands = Params->GetArrayField(TEXT("commands"));
+
+            // Begin transaction
+            int32 TxIndex = GEditor->BeginTransaction(FText::FromString(Label));
+
+            TArray<TSharedPtr<FJsonValue>> Results;
+            bool bAllSuccess = true;
+
+            for (const auto& CmdVal : Commands)
+            {
+                const TSharedPtr<FJsonObject>& CmdObj = CmdVal->AsObject();
+                FString SubType = CmdObj->GetStringField(TEXT("type"));
+                TSharedPtr<FJsonObject> SubParams = CmdObj->HasField(TEXT("params"))
+                    ? CmdObj->GetObjectField(TEXT("params"))
+                    : MakeShareable(new FJsonObject);
+
+                TSharedPtr<FJsonObject> SubResult = RouteCommand(SubType, SubParams);
+                Results.Add(MakeShareable(new FJsonValueObject(SubResult)));
+
+                // Check if sub-command failed
+                if (SubResult->HasField(TEXT("status")) && SubResult->GetStringField(TEXT("status")) == TEXT("error"))
+                {
+                    bAllSuccess = false;
+                    // If fail_fast, cancel transaction
+                    bool bFailFast = Params->HasField(TEXT("fail_fast")) ? Params->GetBoolField(TEXT("fail_fast")) : false;
+                    if (bFailFast)
+                    {
+                        GEditor->CancelTransaction(TxIndex);
+                        ResultJson = MakeShareable(new FJsonObject);
+                        ResultJson->SetBoolField(TEXT("success"), false);
+                        ResultJson->SetStringField(TEXT("error"), TEXT("Transaction cancelled due to sub-command failure"));
+                        ResultJson->SetArrayField(TEXT("results"), Results);
+                        ResultJson->SetBoolField(TEXT("rolled_back"), true);
+                        // Return early - don't EndTransaction
+                        break;
+                    }
+                }
+            }
+
+            if (bAllSuccess || !(Params->HasField(TEXT("fail_fast")) && Params->GetBoolField(TEXT("fail_fast"))))
+            {
+                GEditor->EndTransaction();
+                ResultJson = MakeShareable(new FJsonObject);
+                ResultJson->SetBoolField(TEXT("success"), bAllSuccess);
+                ResultJson->SetArrayField(TEXT("results"), Results);
+                ResultJson->SetNumberField(TEXT("count"), Results.Num());
+                ResultJson->SetBoolField(TEXT("committed"), true);
+                ResultJson->SetStringField(TEXT("label"), Label);
+            }
+
+            ResponseJson->SetStringField(TEXT("status"), bAllSuccess ? TEXT("success") : TEXT("error"));
+            ResponseJson->SetObjectField(TEXT("result"), ResultJson);
+            return ResponseJson;
+        }
         // Editor Commands (including actor manipulation)
         else if (CommandType == TEXT("get_actors_in_level") ||
                  CommandType == TEXT("find_actors_by_name") ||

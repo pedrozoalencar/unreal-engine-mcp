@@ -45,6 +45,10 @@ private:
 	// Apply to actor
 	TSharedPtr<FJsonObject> HandleApplyMaterialToActor(const TSharedPtr<FJsonObject>& Params);
 
+	// Material Instances
+	TSharedPtr<FJsonObject> HandleCreateMaterialInstance(const TSharedPtr<FJsonObject>& Params);
+	TSharedPtr<FJsonObject> HandleSetInstanceParams(const TSharedPtr<FJsonObject>& Params);
+
 	// Helpers
 	UMaterial* FindMaterial(const FString& AssetPath);
 	UMaterialExpression* FindExpression(UMaterial* Mat, const FString& NodeId);

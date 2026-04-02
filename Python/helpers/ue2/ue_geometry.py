@@ -6,7 +6,7 @@ from helpers.ue2.response import UEResponse, cmd, extract_data
 
 TOOL = "ue_geometry"
 ACTIONS = [
-    "create_mesh", "release_mesh", "list_meshes",
+    "create_mesh", "release_mesh", "list_meshes", "cleanup_meshes",
     "primitive", "boolean", "self_union",
     "extrude_faces", "offset", "shell", "bevel",
     "deform", "set_uvs", "transform",
@@ -171,6 +171,14 @@ def register_geometry_tools(mcp, get_connection):
             # ------------------------------------------------------------------
             elif action == "list_meshes":
                 result = cmd(conn, "gs_list_meshes", {})
+                data = extract_data(result)
+                return UEResponse.ok(data, tool=TOOL, duration_ms=(time.time() - t0) * 1000)
+
+            elif action == "cleanup_meshes":
+                max_age = distance  # reuse distance param as max_age_seconds
+                if max_age <= 0:
+                    max_age = 300.0
+                result = cmd(conn, "gs_cleanup_meshes", {"max_age_seconds": max_age})
                 data = extract_data(result)
                 return UEResponse.ok(data, tool=TOOL, duration_ms=(time.time() - t0) * 1000)
 

@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from helpers.ue2.response import UEResponse, cmd, extract_data
 
 TOOL = "ue_session"
-ACTIONS = ["ping", "get_context", "run_python", "begin_transaction", "end_transaction", "undo", "redo"]
+ACTIONS = ["ping", "get_context", "run_python", "begin_transaction", "end_transaction", "undo", "redo", "scoped_transaction"]
 
 
 def register_session_tools(mcp, get_connection):
@@ -117,6 +117,23 @@ print(json.dumps(context))
 
             elif action == "redo":
                 result = cmd(conn, "tx_redo", {})
+                return UEResponse.ok(extract_data(result), tool=TOOL, duration_ms=(time.time() - t0) * 1000)
+
+            elif action == "scoped_transaction":
+                if not code:
+                    return UEResponse.error("E_INVALID_ARGUMENT",
+                        "Parameter 'code' is required for scoped_transaction (JSON string of commands list)", TOOL)
+                import json as _json
+                try:
+                    commands = _json.loads(code)
+                except Exception:
+                    return UEResponse.error("E_INVALID_ARGUMENT",
+                        "code must be a JSON array of {type, params} objects", TOOL)
+                result = cmd(conn, "scoped_transaction", {
+                    "label": "MCP Scoped Transaction",
+                    "commands": commands,
+                    "fail_fast": True
+                })
                 return UEResponse.ok(extract_data(result), tool=TOOL, duration_ms=(time.time() - t0) * 1000)
 
             # ------------------------------------------------------------------

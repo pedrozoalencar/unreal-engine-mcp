@@ -21,6 +21,13 @@ private:
 	// Mesh registry
 	TMap<FString, TObjectPtr<UDynamicMesh>> MeshRegistry;
 
+	// Mesh access timestamps for auto-cleanup
+	TMap<FString, double> MeshLastAccessTime;
+	void UpdateMeshAccess(const FString& Name);
+
+	// Cleanup command
+	TSharedPtr<FJsonObject> HandleCleanupMeshes(const TSharedPtr<FJsonObject>& Params);
+
 	// Registry helpers
 	UDynamicMesh* GetOrCreateMesh(const FString& Name);
 	UDynamicMesh* FindMesh(const FString& Name);
