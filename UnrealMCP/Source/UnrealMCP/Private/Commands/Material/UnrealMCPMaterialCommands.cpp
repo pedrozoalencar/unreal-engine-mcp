@@ -1289,24 +1289,33 @@ TSharedPtr<FJsonObject> FUnrealMCPMaterialCommands::HandleCreateMaterialInstance
 		return MakeErrorResponse(FString::Printf(TEXT("Could not load parent material: %s"), *ParentPath));
 	}
 
-	UMaterialInstanceConstantFactoryNew* Factory = NewObject<UMaterialInstanceConstantFactoryNew>();
-	Factory->InitialParent = ParentMaterial;
-
+	// Create without factory (factory crashes with Substrate materials) then set parent
 	FString PackageName = FPackageName::ObjectPathToPackageName(InstancePath);
 	FString AssetName = FPackageName::GetLongPackageAssetName(PackageName);
+	FString PackagePath = FPackageName::GetLongPackagePath(PackageName);
 
 	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
-	UObject* NewAsset = AssetTools.CreateAsset(AssetName, FPackageName::GetLongPackagePath(PackageName), UMaterialInstanceConstant::StaticClass(), Factory);
+	UObject* NewAsset = AssetTools.CreateAsset(AssetName, PackagePath, UMaterialInstanceConstant::StaticClass(), nullptr);
 
 	if (!NewAsset)
 	{
 		return MakeErrorResponse(TEXT("Failed to create material instance"));
 	}
 
+	// Set parent material
+	UMaterialInstanceConstant* Instance = Cast<UMaterialInstanceConstant>(NewAsset);
+	if (Instance)
+	{
+		Instance->SetParentEditorOnly(ParentMaterial);
+		Instance->PostEditChange();
+		Instance->MarkPackageDirty();
+	}
+
 	TSharedPtr<FJsonObject> Result = MakeShareable(new FJsonObject);
 	Result->SetBoolField(TEXT("success"), true);
 	Result->SetStringField(TEXT("instance_path"), InstancePath);
 	Result->SetStringField(TEXT("parent_path"), ParentPath);
+	Result->SetStringField(TEXT("class"), TEXT("MaterialInstanceConstant"));
 	return Result;
 }
 
