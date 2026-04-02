@@ -1,604 +1,179 @@
 {
-  "version": "2.0.0",
+  "version": "2.0.1",
   "engine": "Unreal Engine 5.7",
-  "total_tools": 146,
-  "tools": {
-    "add_component_to_blueprint": {
-      "description": "Add a component to a Blueprint."
-    },
-    "add_event_node": {
-      "description": "\n    Add an event node to a Blueprint graph.\n\n    Create specialized event nodes (ReceiveBeginPlay, ReceiveTick, etc.)\n    in a Blueprint's event graph at specified positions.\n\n    Args:\n        bluep"
-    },
-    "add_event_override": {
-      "description": "Override a parent class event/function in a Blueprint (e.g. OnRebuildGeneratedMesh, ReceiveBeginPlay).\n    Creates the function override graph and returns the entry node ID and its output pins.\n    Us"
-    },
-    "add_function_input": {
-      "description": "\n    Add an input parameter to a Blueprint function.\n\n    Args:\n        blueprint_name: Name of the Blueprint to modify\n        function_name: Name of the function\n        param_name: Name of the inpu"
-    },
-    "add_function_output": {
-      "description": "\n    Add an output parameter to a Blueprint function.\n\n    Args:\n        blueprint_name: Name of the Blueprint to modify\n        function_name: Name of the function\n        param_name: Name of the out"
-    },
-    "add_node": {
-      "description": "\n    Add a node to a Blueprint graph.\n\n    Create various types of K2Nodes in a Blueprint's event graph or function graph.\n    Supports 23 node types organized by category.\n\n    Args:\n        blueprin"
-    },
-    "analyze_blueprint_graph": {
-      "description": "\n    Analyze a specific graph within a Blueprint (EventGraph, functions, etc.)\n    and provide detailed information about nodes, connections, and execution flow.\n    \n    Args:\n        blueprint_path:"
-    },
-    "apply_material_to_actor": {
-      "description": "Apply a specific material to an actor in the level."
-    },
-    "apply_material_to_blueprint": {
-      "description": "Apply a specific material to a component in a Blueprint."
-    },
-    "asset_delete": {
-      "description": "Delete an asset. Use with caution."
-    },
-    "asset_duplicate": {
-      "description": "Duplicate an asset to a new path."
-    },
-    "asset_exists": {
-      "description": "Check if an asset exists at the given path."
-    },
-    "asset_find": {
-      "description": "Search for assets by name. Returns matching assets with paths."
-    },
-    "asset_get_info": {
-      "description": "Get detailed info about an asset: class, package, references, is dirty."
-    },
-    "asset_list": {
-      "description": "List assets in a directory. Returns path, name, and class for each.\n        class_filter: optional, e.g. 'Material', 'StaticMesh', 'Blueprint'"
-    },
-    "asset_rename": {
-      "description": "Rename/move an asset."
-    },
-    "asset_save": {
-      "description": "Save a specific asset."
-    },
-    "asset_save_all": {
-      "description": "Save all unsaved/dirty assets."
-    },
-    "batch_execute": {
-      "description": "Execute multiple MCP commands in a single network round-trip.\n        commands: list of {\"type\": \"command_name\", \"params\": {...}} objects.\n        Example: [{\"type\": \"gs_create_mesh\", \"params\": {\"mesh"
-    },
-    "compile_blueprint": {
-      "description": "Compile a Blueprint."
-    },
-    "connect_nodes": {
-      "description": "\n    Connect two nodes in a Blueprint graph.\n\n    Links a source pin to a target pin between existing nodes in a Blueprint's event graph or function graph.\n\n    Args:\n        blueprint_name: Name of t"
-    },
-    "construct_house": {
-      "description": "Construct a realistic house with architectural details and multiple rooms."
-    },
-    "construct_mansion": {
-      "description": "\n    Construct a magnificent mansion with multiple wings, grand rooms, gardens,\n    fountains, and luxury features perfect for dramatic TikTok reveals.\n    "
-    },
-    "create_aqueduct": {
-      "description": "\n    Build a multi-tier Roman-style aqueduct with arches and water channel.\n    \n    Creates a majestic aqueduct with repeating arches, support piers, and\n    a water channel deck. Each tier has progr"
-    },
-    "create_arch": {
-      "description": "Create a simple arch using cubes in a semicircle."
-    },
-    "create_blueprint": {
-      "description": "Create a new Blueprint class."
-    },
-    "create_castle_fortress": {
-      "description": "\n    Create a massive castle fortress with walls, towers, courtyards, throne room,\n    and surrounding village. Perfect for dramatic TikTok reveals showing\n    the scale and detail of a complete medie"
-    },
-    "create_function": {
-      "description": "\n    Create a new function in a Blueprint.\n\n    Args:\n        blueprint_name: Name of the Blueprint to modify\n        function_name: Name for the new function\n        return_type: Return type of the f"
-    },
-    "create_maze": {
-      "description": "Create a proper solvable maze with entrance, exit, and guaranteed path using recursive backtracking algorithm."
-    },
-    "create_pyramid": {
-      "description": "Spawn a pyramid made of cube actors."
-    },
-    "create_staircase": {
-      "description": "Create a staircase from cubes."
-    },
-    "create_suspension_bridge": {
-      "description": "\n    Build a suspension bridge with towers, deck, cables, and suspenders.\n    \n    Creates a realistic suspension bridge with parabolic main cables, vertical\n    suspenders, twin towers, and a multi-l"
-    },
-    "create_tower": {
-      "description": "Create a realistic tower with various architectural styles."
-    },
-    "create_town": {
-      "description": "Create a full dynamic town with buildings, streets, infrastructure, and vehicles."
-    },
-    "create_variable": {
-      "description": "\n    Create a variable in a Blueprint.\n\n    Adds a new variable to a Blueprint with specified type, default value, and properties.\n\n    Args:\n        blueprint_name: Name of the Blueprint to modify\n  "
-    },
-    "create_wall": {
-      "description": "Create a simple wall from cubes."
-    },
-    "delete_actor": {
-      "description": "Delete an actor by name."
-    },
-    "delete_function": {
-      "description": "\n    Delete a function from a Blueprint.\n\n    Args:\n        blueprint_name: Name of the Blueprint to modify\n        function_name: Name of the function to delete\n\n    Returns:\n        Dictionary with "
-    },
-    "delete_node": {
-      "description": "\n    Delete a node from a Blueprint graph.\n\n    Removes a node and all its connections from either the EventGraph\n    or a specific function graph.\n\n    Args:\n        blueprint_name: Name of the Bluep"
-    },
-    "execute_python_file_in_editor": {
-      "description": "Execute a Python script file inside the Unreal Editor.\n        file_path: absolute path to the .py file on disk.\n        The file is read and executed in the editor's Python environment."
-    },
-    "execute_python_in_editor": {
-      "description": "Execute Python code directly inside the Unreal Editor.\n        The code runs in the editor's Python environment with full access to unreal module.\n        Example: 'import unreal; print(unreal.EditorA"
-    },
-    "find_actors_by_name": {
-      "description": "Find actors by name pattern."
-    },
-    "get_actor_material_info": {
-      "description": "Get information about the materials currently applied to an actor."
-    },
-    "get_actors_in_level": {
-      "description": "Get a list of all actors in the current level."
-    },
-    "get_available_materials": {
-      "description": "Get a list of available materials in the project that can be applied to objects."
-    },
-    "get_blueprint_function_details": {
-      "description": "\n    Get detailed information about Blueprint functions including parameters,\n    return values, local variables, and function graph content.\n    \n    Args:\n        blueprint_path: Full path to the Bl"
-    },
-    "get_blueprint_variable_details": {
-      "description": "\n    Get detailed information about Blueprint variables including type, \n    default values, metadata, and usage within the Blueprint.\n    \n    Args:\n        blueprint_path: Full path to the Blueprint"
-    },
-    "gs_append_box": {
-      "description": "Append a box primitive to a named dynamic mesh.\n        Creates the mesh if it doesn't exist. Steps add subdivisions."
-    },
-    "gs_append_capsule": {
-      "description": "Append a capsule (cylinder with hemisphere caps) to a named dynamic mesh."
-    },
-    "gs_append_cone": {
-      "description": "Append a cone (or truncated cone) primitive. Set top_radius > 0 for frustum."
-    },
-    "gs_append_cylinder": {
-      "description": "Append a cylinder primitive to a named dynamic mesh."
-    },
-    "gs_append_mesh": {
-      "description": "Append (combine) one mesh into another with an optional transform.\n        Unlike boolean union, this simply merges triangles without resolving intersections.\n        Much faster than boolean union wh"
-    },
-    "gs_append_revolve": {
-      "description": "Revolve a 2D profile path around the Y axis to create a surface of revolution.\n        path_points: list of [x, y] coordinates defining the profile (min 2 points).\n        Use revolve_degrees < 360 fo"
-    },
-    "gs_append_sphere": {
-      "description": "Append a sphere primitive to a named dynamic mesh."
-    },
-    "gs_append_sweep": {
-      "description": "Sweep a 2D polygon along a 3D path to create extruded geometry.\n        polygon_vertices: list of [x, y] defining the cross-section (min 3 vertices).\n        sweep_path: list of {\"location\": [x, y, z]"
-    },
-    "gs_append_torus": {
-      "description": "Append a torus (donut shape) primitive to a named dynamic mesh."
-    },
-    "gs_auto_uvs": {
-      "description": "Auto-generate patch-based UVs for a mesh.\n        Best general-purpose UV unwrapping for procedural geometry."
-    },
-    "gs_bend": {
-      "description": "Apply a bend warp deformation to a mesh. Bends the mesh along its Z axis.\n        angle: bend angle in degrees. bounds: Z range affected."
-    },
-    "gs_bevel": {
-      "description": "Bevel all polygroup edges on a mesh. Rounds sharp edges.\n        subdivisions: extra edge loops for smoother rounding.\n        round_weight: 0=flat, 1=round."
-    },
-    "gs_boolean": {
-      "description": "Apply a boolean operation between two named meshes.\n        operation: 'union', 'intersect', or 'subtract' (default).\n        output_mesh: name for result (defaults to target_mesh, overwriting it).\n  "
-    },
-    "gs_box_projection": {
-      "description": "Project UVs using a box projection. Good for boxy shapes.\n        Projects from 6 cube faces, each face picks the closest projection."
-    },
-    "gs_create_mesh": {
-      "description": "Create an empty named dynamic mesh in the Geometry Script registry.\n        This mesh can then be modified with append, boolean, and deformation operations.\n        Must be called before other gs_* op"
-    },
-    "gs_flare": {
-      "description": "Apply a flare (taper) warp deformation. Scales X/Y based on Z position.\n        flare_x/y: percentage of scaling at the top of the bounds."
-    },
-    "gs_get_bounds": {
-      "description": "Get detailed bounding box: min, max, center, and extent for each axis."
-    },
-    "gs_inset_outset_faces": {
-      "description": "Inset (positive distance) or outset (negative) faces within their plane.\n        Creates a border ring around selected faces. Great for adding detail.\n        material_id: only inset faces with this m"
-    },
-    "gs_is_point_inside": {
-      "description": "Test if a point is inside a closed mesh volume. Uses BVH for fast queries."
-    },
-    "gs_linear_extrude_faces": {
-      "description": "Extrude faces of a mesh linearly along a direction.\n        direction: [x,y,z] fixed direction. If omitted, extrudes along average face normals.\n        material_id: only extrude faces with this mater"
-    },
-    "gs_list_meshes": {
-      "description": "List all dynamic meshes currently in the registry with their vertex/triangle counts."
-    },
-    "gs_offset": {
-      "description": "Offset mesh surface uniformly by a distance (inflate/deflate).\n        Positive distance inflates, negative deflates."
-    },
-    "gs_offset_faces": {
-      "description": "Offset selected faces along their normals (push in/out).\n        material_id: only offset faces with this material ID. If omitted, offsets all faces."
-    },
-    "gs_perlin_noise": {
-      "description": "Apply Perlin noise displacement to a mesh surface.\n        Creates organic-looking surface variation. Great for terrain patches."
-    },
-    "gs_planar_projection": {
-      "description": "Project UVs from a plane onto the mesh. Good for flat surfaces.\n        The plane orientation is defined by location and rotation."
-    },
-    "gs_query_mesh_info": {
-      "description": "Get basic mesh info: vertex count, triangle count, and bounding box."
-    },
-    "gs_query_vertices": {
-      "description": "Get vertex positions from a mesh. Returns up to max_vertices positions."
-    },
-    "gs_raycast": {
-      "description": "Cast a ray against a mesh using BVH acceleration.\n        Returns hit position, triangle ID, and ray parameter if hit."
-    },
-    "gs_release_mesh": {
-      "description": "Release a named dynamic mesh from the registry, freeing its memory."
-    },
-    "gs_select_all": {
-      "description": "Select all triangles in a mesh. Returns the count of selected elements."
-    },
-    "gs_select_by_material": {
-      "description": "Select all triangles with a specific material ID."
-    },
-    "gs_select_by_normal": {
-      "description": "Select triangles whose normal is within max_angle degrees of the given direction.\n        normal=[0,0,1] with max_angle=30 selects upward-facing faces."
-    },
-    "gs_select_in_box": {
-      "description": "Select triangles inside a bounding box."
-    },
-    "gs_self_union": {
-      "description": "Apply self-union to resolve self-intersections in a mesh.\n        Useful after combining multiple primitives that overlap."
-    },
-    "gs_shell": {
-      "description": "Create a hollow shell from a solid mesh with the given wall thickness."
-    },
-    "gs_smooth": {
-      "description": "Apply iterative Laplacian smoothing to a mesh.\n        Reduces sharp edges and noise. More iterations = smoother but loses detail."
-    },
-    "gs_twist": {
-      "description": "Apply a twist warp deformation around the Z axis.\n        angle: total twist angle in degrees across the bounds range."
-    },
-    "inspect_class": {
-      "description": "List all BlueprintCallable functions and visible properties of any UE class.\n        class_name: e.g. 'Actor', 'StaticMeshComponent', 'GeneratedDynamicMeshActor'\n        include_inherited: include par"
-    },
-    "inspect_enum": {
-      "description": "List all values of a UEnum type.\n        enum_name: e.g. 'EBlendMode', 'EGeometryScriptBooleanOperation'\n        Use this to discover valid parameter values for enum-typed pins."
-    },
-    "level_focus_actor": {
-      "description": "Focus the viewport camera on a specific actor."
-    },
-    "level_get_actor_properties": {
-      "description": "Get all properties of an actor: class, transform, components, visible UPROPERTYs."
-    },
-    "level_get_component_properties": {
-      "description": "Get properties of a specific component on an actor."
-    },
-    "level_get_info": {
-      "description": "Get level info: name, actor count by class, world bounds."
-    },
-    "level_save": {
-      "description": "Save the current level."
-    },
-    "level_screenshot": {
-      "description": "Capture viewport screenshot to a PNG file. Returns the file path."
-    },
-    "level_set_actor_property": {
-      "description": "Set a property on an actor. Supports location/rotation/scale as [x,y,z], bool, int, float, string."
-    },
-    "level_set_camera": {
-      "description": "Set the editor viewport camera position and rotation."
-    },
-    "level_spawn_blueprint": {
-      "description": "Spawn a Blueprint actor in the level by its asset path.\n        blueprint_path: e.g. '/Game/Blueprints/BP_GS_Cup'"
-    },
-    "mat_add_expression": {
-      "description": "Add a material expression node. Returns node_id for connections.\n        expression_class: MaterialExpressionConstant, MaterialExpressionConstant3Vector,\n        MaterialExpressionFresnel, MaterialExp"
-    },
-    "mat_apply_to_actor": {
-      "description": "Apply a material to an actor's mesh component."
-    },
-    "mat_compile": {
-      "description": "Recompile and save a material."
-    },
-    "mat_connect": {
-      "description": "Connect output of one expression to input of another.\n        source_node_id: ID of the source node. target_node_id: ID of the target node.\n        input_pin_name: name of the input pin (use mat_list_"
-    },
-    "mat_connect_to_output": {
-      "description": "Connect an expression to a material output property.\n        material_property: BaseColor, Roughness, Metallic, Specular, Normal,\n        Opacity, Refraction, EmissiveColor, FrontMaterial (for Substra"
-    },
-    "mat_create_material": {
-      "description": "Create a new material asset.\n        blend_mode: Opaque, Translucent, TranslucentColoredTransmittance, TranslucentGreyTransmittance, Additive, Modulate\n        shading_model: DefaultLit, Unlit, ThinTr"
-    },
-    "mat_delete_expression": {
-      "description": "Delete a material expression node by its ID."
-    },
-    "mat_disconnect": {
-      "description": "Disconnect an input pin on an expression node."
-    },
-    "mat_get_info": {
-      "description": "Get material info: settings and list of expression nodes."
-    },
-    "mat_list_expressions": {
-      "description": "List all expression nodes in a material with class, name, position, and ID."
-    },
-    "mat_list_pins": {
-      "description": "List ALL input and output pins of a material expression node.\n        Essential for discovering Substrate BSDF pin names."
-    },
-    "mat_set_expression_value": {
-      "description": "Set a value on a material expression node.\n        Constant: property_name='R', value=1.52\n        Constant3Vector: property_name='Constant', value='(R=0.8,G=0.9,B=0.95,A=1.0)'\n        Fresnel: 'Expon"
-    },
-    "mat_set_property": {
-      "description": "Set a material property: blend_mode, shading_model, two_sided, translucency_lighting_mode."
-    },
-    "rc_batch": {
-      "description": "Execute multiple Remote Control operations in a single transaction.\n        Each request dict should have: objectPath, propertyName (for property ops)\n        or objectPath, functionName, parameters ("
-    },
-    "rc_call_function": {
-      "description": "Call any UFunction on a UObject via Remote Control API.\n        object_path: path to the object. function_name: name of the UFUNCTION.\n        parameters: dict of function parameters."
-    },
-    "rc_get_preset": {
-      "description": "Get details of a specific Remote Control preset including its exposed properties and functions."
-    },
-    "rc_get_property": {
-      "description": "Read a property from any UObject via Unreal Remote Control API.\n        object_path: full path like '/Game/Maps/Level.Level:PersistentLevel.MyActor.RootComponent'\n        property_name: e.g. 'Relative"
-    },
-    "rc_list_presets": {
-      "description": "List all Remote Control presets defined in the project.\n        Presets expose specific properties/functions for remote control."
-    },
-    "rc_search_objects": {
-      "description": "Search for assets/objects in the Unreal project.\n        query: search text. class_name: filter by class (e.g. 'StaticMesh').\n        outer_path: filter by package path."
-    },
-    "rc_set_property": {
-      "description": "Write a property on any UObject via Unreal Remote Control API.\n        value can be a number, string, boolean, or dict for struct types."
-    },
-    "read_blueprint_content": {
-      "description": "\n    Read and analyze the complete content of a Blueprint including event graph, \n    functions, variables, components, and implemented interfaces.\n    \n    Args:\n        blueprint_path: Full path to "
-    },
-    "rename_function": {
-      "description": "\n    Rename a function in a Blueprint.\n\n    Args:\n        blueprint_name: Name of the Blueprint to modify\n        old_function_name: Current name of the function\n        new_function_name: New name fo"
-    },
-    "set_actor_transform": {
-      "description": "Set the transform of an actor."
-    },
-    "set_blueprint_variable_properties": {
-      "description": "\n    Modify properties of an existing Blueprint variable without deleting it.\n\n    Preserves all VariableGet and VariableSet nodes connected to this variable.\n\n    Args:\n        blueprint_name: Name o"
-    },
-    "set_mesh_material_color": {
-      "description": "Set material color on a mesh component using the proven color system."
-    },
-    "set_node_property": {
-      "description": "\n    Set a property on a Blueprint node or perform semantic node editing.\n\n    This function supports both simple property modifications and advanced semantic\n    node editing operations (pin manageme"
-    },
-    "set_physics_properties": {
-      "description": "Set physics properties on a component."
-    },
-    "set_pin_value": {
-      "description": "Set a default value on a specific pin of a Blueprint node.\n    node_id: the node GUID or name (e.g. 'K2Node_CallFunction_0').\n    pin_name: the pin to set (e.g. 'Radius', 'Height', 'RadialSteps').\n   "
-    },
-    "set_static_mesh_properties": {
-      "description": "Set static mesh properties on a StaticMeshComponent."
-    },
-    "spawn_physics_blueprint_actor": {
-      "description": "\n    Quickly spawn a single actor with physics, color, and a specific mesh.\n\n    This is the primary function for creating simple objects with physics properties.\n    It handles creating a temporary B"
-    },
-    "tpl_gs_column": {
-      "description": "Create a classical column with base, shaft, and capital.\n        Uses cylinder primitives composed together."
-    },
-    "tpl_gs_cup": {
-      "description": "Create a complete hollow cup mesh using boolean subtract.\n        Creates outer cylinder, inner cavity cylinder, boolean subtracts, and optionally spawns."
-    },
-    "tpl_gs_pipe": {
-      "description": "Create a pipe (hollow tube) along a path using sweep polygon.\n        path_points: list of [x,y,z] waypoints for the pipe centerline."
-    },
-    "tpl_gs_terrain": {
-      "description": "Create a procedural terrain patch using a subdivided box + Perlin noise displacement.\n        size: terrain size in XY. subdivisions: detail level. noise_magnitude/frequency: terrain variation."
-    },
-    "tpl_mat_emissive": {
-      "description": "Create an emissive material. Great for glowing objects, lights, and UI elements.\n        color: [R,G,B] emissive color. intensity: multiplier for brightness."
-    },
-    "tpl_mat_glass": {
-      "description": "Create a complete Substrate glass material with SlabBSDF, TransmittanceToMFP,\n        Fresnel refraction, and all nodes connected. Ready to use.\n        tint_color: [R,G,B] for glass color tint (white"
-    },
-    "tpl_mat_pbr": {
-      "description": "Create a complete PBR material with Substrate SlabBSDF. Ready to use.\n        base_color: [R,G,B] diffuse color. roughness: 0=mirror, 1=rough. metallic: 0=dielectric, 1=metal."
-    },
-    "tpl_scene_arrange_circle": {
-      "description": "Arrange Blueprint actors in a circle pattern.\n        face_center: if True, actors rotate to face the center point."
-    },
-    "tpl_scene_arrange_grid": {
-      "description": "Spawn a grid of Blueprint actors. Great for testing materials or layouts.\n        Creates rows*cols actors evenly spaced."
-    },
-    "tpl_scene_create_and_place": {
-      "description": "Spawn a Blueprint actor and optionally apply a material - all in one call.\n        blueprint_path: e.g. '/Game/Blueprints/BP_GS_Cup'\n        material_path: optional material to apply (e.g. '/Game/Geom"
-    },
-    "ue_assets": {
-      "description": "Unified asset management tool for Unreal Editor.\n\n        Actions:\n          search        -- Search assets by name. Params: query, path=\"/Game/\", class_filter=\"\", limit=50.\n          list          --"
-    },
-    "ue_blueprints": {
-      "description": "Unified blueprint tool for Unreal Editor.\n\n        Actions:\n          create           -- Create a new Blueprint asset.\n                              Params: name, parent_class=\"Actor\", path=\"/Game/Bl"
-    },
-    "ue_capture": {
-      "description": "Viewport capture and camera control for Unreal Editor.\n\n        Actions:\n          screenshot       -- Capture a viewport screenshot. Params: file_path (optional).\n          set_camera       -- Set vi"
-    },
-    "ue_console": {
-      "description": "Output log and console command interface for Unreal Editor.\n\n        Actions:\n          read_log      -- Read recent lines from the Unreal output log file.\n                           Params: limit (in"
-    },
-    "ue_geometry": {
-      "description": "Unified geometry/procedural-mesh tool for Unreal Editor (Geometry Script).\n\n        Actions:\n          create_mesh       -- Create an empty named dynamic mesh.\n                               Params: n"
-    },
-    "ue_inspect": {
-      "description": "Runtime introspection for Unreal Engine classes and enums.\n\n        Actions:\n          class_info    -- List all BlueprintCallable functions and visible properties of a UE class.\n                     "
-    },
-    "ue_materials": {
-      "description": "Unified material tool for Unreal Editor.\n\n        Actions:\n          create             -- Create a new material asset.\n                                Params: asset_path, blend_mode=\"Opaque\",\n       "
-    },
-    "ue_playtest": {
-      "description": "Play-In-Editor (PIE) control.\n\n        Actions:\n          play        -- Start PIE in Simulate mode.\n          stop        -- Stop the current PIE session.\n          is_playing  -- Check if a PIE sess"
-    },
-    "ue_scene": {
-      "description": "Unified scene/level management tool for Unreal Editor.\n\n        Actions:\n          list_actors    -- List actors in the level. Params: class_filter=\"\", label_query=\"\", limit=100.\n          find_actor "
-    },
-    "ue_session": {
-      "description": "Unified session/utility tool for Unreal Editor.\n\n        Actions:\n          ping          -- Check connection to Unreal Engine and return engine info.\n          get_context   -- Get current editor con"
-    },
-    "ue_templates": {
-      "description": "High-level templates that compose multiple Unreal commands into one call.\n\n        MATERIAL TEMPLATES:\n          mat_glass       -- Create complete Substrate glass material with SlabBSDF,\n            "
-    }
-  },
+  "total_tools": 155,
+  "test_results": "31/31 pass (100%)",
+  "avg_latency_ms": 210,
   "categories": {
-    "ue2_action_based": [
-      "ue_assets",
-      "ue_blueprints",
-      "ue_capture",
-      "ue_console",
-      "ue_geometry",
-      "ue_inspect",
-      "ue_materials",
-      "ue_playtest",
-      "ue_scene",
-      "ue_session",
-      "ue_templates"
-    ],
-    "templates": [
-      "tpl_gs_column",
-      "tpl_gs_cup",
-      "tpl_gs_pipe",
-      "tpl_gs_terrain",
-      "tpl_mat_emissive",
-      "tpl_mat_glass",
-      "tpl_mat_pbr",
-      "tpl_scene_arrange_circle",
-      "tpl_scene_arrange_grid",
-      "tpl_scene_create_and_place"
-    ],
-    "legacy": [
-      "add_component_to_blueprint",
-      "add_event_node",
-      "add_event_override",
-      "add_function_input",
-      "add_function_output",
-      "add_node",
-      "analyze_blueprint_graph",
-      "apply_material_to_actor",
-      "apply_material_to_blueprint",
-      "asset_delete",
-      "asset_duplicate",
-      "asset_exists",
-      "asset_find",
-      "asset_get_info",
-      "asset_list",
-      "asset_rename",
-      "asset_save",
-      "asset_save_all",
-      "batch_execute",
-      "compile_blueprint",
-      "connect_nodes",
-      "construct_house",
-      "construct_mansion",
-      "create_aqueduct",
-      "create_arch",
-      "create_blueprint",
-      "create_castle_fortress",
-      "create_function",
-      "create_maze",
-      "create_pyramid",
-      "create_staircase",
-      "create_suspension_bridge",
-      "create_tower",
-      "create_town",
-      "create_variable",
-      "create_wall",
-      "delete_actor",
-      "delete_function",
-      "delete_node",
-      "execute_python_file_in_editor",
-      "execute_python_in_editor",
-      "find_actors_by_name",
-      "get_actor_material_info",
-      "get_actors_in_level",
-      "get_available_materials",
-      "get_blueprint_function_details",
-      "get_blueprint_variable_details",
-      "gs_append_box",
-      "gs_append_capsule",
-      "gs_append_cone",
-      "gs_append_cylinder",
-      "gs_append_mesh",
-      "gs_append_revolve",
-      "gs_append_sphere",
-      "gs_append_sweep",
-      "gs_append_torus",
-      "gs_auto_uvs",
-      "gs_bend",
-      "gs_bevel",
-      "gs_boolean",
-      "gs_box_projection",
-      "gs_create_mesh",
-      "gs_flare",
-      "gs_get_bounds",
-      "gs_inset_outset_faces",
-      "gs_is_point_inside",
-      "gs_linear_extrude_faces",
-      "gs_list_meshes",
-      "gs_offset",
-      "gs_offset_faces",
-      "gs_perlin_noise",
-      "gs_planar_projection",
-      "gs_query_mesh_info",
-      "gs_query_vertices",
-      "gs_raycast",
-      "gs_release_mesh",
-      "gs_select_all",
-      "gs_select_by_material",
-      "gs_select_by_normal",
-      "gs_select_in_box",
-      "gs_self_union",
-      "gs_shell",
-      "gs_smooth",
-      "gs_twist",
-      "inspect_class",
-      "inspect_enum",
-      "level_focus_actor",
-      "level_get_actor_properties",
-      "level_get_component_properties",
-      "level_get_info",
-      "level_save",
-      "level_screenshot",
-      "level_set_actor_property",
-      "level_set_camera",
-      "level_spawn_blueprint",
-      "mat_add_expression",
-      "mat_apply_to_actor",
-      "mat_compile",
-      "mat_connect",
-      "mat_connect_to_output",
-      "mat_create_material",
-      "mat_delete_expression",
-      "mat_disconnect",
-      "mat_get_info",
-      "mat_list_expressions",
-      "mat_list_pins",
-      "mat_set_expression_value",
-      "mat_set_property",
-      "rc_batch",
-      "rc_call_function",
-      "rc_get_preset",
-      "rc_get_property",
-      "rc_list_presets",
-      "rc_search_objects",
-      "rc_set_property",
-      "read_blueprint_content",
-      "rename_function",
-      "set_actor_transform",
-      "set_blueprint_variable_properties",
-      "set_mesh_material_color",
-      "set_node_property",
-      "set_physics_properties",
-      "set_pin_value",
-      "set_static_mesh_properties",
-      "spawn_physics_blueprint_actor"
-    ]
-  },
-  "counts": {
-    "ue2": 11,
-    "templates": 10,
-    "legacy": 125
+    "ue2_action_based": {
+      "count": 11,
+      "tools": [
+        "ue_assets",
+        "ue_blueprints",
+        "ue_capture",
+        "ue_console",
+        "ue_geometry",
+        "ue_inspect",
+        "ue_materials",
+        "ue_playtest",
+        "ue_scene",
+        "ue_session",
+        "ue_templates"
+      ]
+    },
+    "templates": {
+      "count": 10,
+      "tools": [
+        "tpl_gs_column",
+        "tpl_gs_cup",
+        "tpl_gs_pipe",
+        "tpl_gs_terrain",
+        "tpl_mat_emissive",
+        "tpl_mat_glass",
+        "tpl_mat_pbr",
+        "tpl_scene_arrange_circle",
+        "tpl_scene_arrange_grid",
+        "tpl_scene_create_and_place"
+      ]
+    },
+    "legacy": {
+      "count": 134,
+      "tools": [
+        "add_component_to_blueprint",
+        "add_event_node",
+        "add_event_override",
+        "add_function_input",
+        "add_function_output",
+        "add_node",
+        "analyze_blueprint_graph",
+        "apply_material_to_actor",
+        "apply_material_to_blueprint",
+        "asset_delete",
+        "asset_duplicate",
+        "asset_exists",
+        "asset_find",
+        "asset_get_info",
+        "asset_list",
+        "asset_rename",
+        "asset_save",
+        "asset_save_all",
+        "batch_execute",
+        "compile_blueprint",
+        "connect_nodes",
+        "construct_house",
+        "construct_mansion",
+        "create_aqueduct",
+        "create_arch",
+        "create_blueprint",
+        "create_castle_fortress",
+        "create_function",
+        "create_maze",
+        "create_pyramid",
+        "create_staircase",
+        "create_suspension_bridge",
+        "create_tower",
+        "create_town",
+        "create_variable",
+        "create_wall",
+        "delete_actor",
+        "delete_function",
+        "delete_node",
+        "execute_python_file_in_editor",
+        "execute_python_in_editor",
+        "find_actors_by_name",
+        "get_actor_material_info",
+        "get_actors_in_level",
+        "get_available_materials",
+        "get_blueprint_function_details",
+        "get_blueprint_variable_details",
+        "gs_append_box",
+        "gs_append_capsule",
+        "gs_append_cone",
+        "gs_append_cylinder",
+        "gs_append_mesh",
+        "gs_append_revolve",
+        "gs_append_sphere",
+        "gs_append_sweep",
+        "gs_append_torus",
+        "gs_auto_uvs",
+        "gs_bend",
+        "gs_bevel",
+        "gs_boolean",
+        "gs_box_projection",
+        "gs_copy_from_static_mesh",
+        "gs_copy_to_static_mesh",
+        "gs_create_mesh",
+        "gs_flare",
+        "gs_get_bounds",
+        "gs_get_material_ids",
+        "gs_inset_outset_faces",
+        "gs_is_point_inside",
+        "gs_linear_extrude_faces",
+        "gs_list_meshes",
+        "gs_offset",
+        "gs_offset_faces",
+        "gs_perlin_noise",
+        "gs_planar_projection",
+        "gs_query_mesh_info",
+        "gs_query_vertices",
+        "gs_raycast",
+        "gs_release_mesh",
+        "gs_remap_material_ids",
+        "gs_scale",
+        "gs_select_all",
+        "gs_select_by_material",
+        "gs_select_by_normal",
+        "gs_select_in_box",
+        "gs_self_union",
+        "gs_set_material_id",
+        "gs_shell",
+        "gs_smooth",
+        "gs_spawn_dynamic_mesh_actor",
+        "gs_transform_mesh",
+        "gs_translate",
+        "gs_twist",
+        "inspect_class",
+        "inspect_enum",
+        "level_focus_actor",
+        "level_get_actor_properties",
+        "level_get_component_properties",
+        "level_get_info",
+        "level_save",
+        "level_screenshot",
+        "level_set_actor_property",
+        "level_set_camera",
+        "level_spawn_blueprint",
+        "mat_add_expression",
+        "mat_apply_to_actor",
+        "mat_compile",
+        "mat_connect",
+        "mat_connect_to_output",
+        "mat_create_material",
+        "mat_delete_expression",
+        "mat_disconnect",
+        "mat_get_info",
+        "mat_list_expressions",
+        "mat_list_pins",
+        "mat_set_expression_value",
+        "mat_set_property",
+        "rc_batch",
+        "rc_call_function",
+        "rc_get_preset",
+        "rc_get_property",
+        "rc_list_presets",
+        "rc_search_objects",
+        "rc_set_property",
+        "read_blueprint_content",
+        "rename_function",
+        "set_actor_transform",
+        "set_blueprint_variable_properties",
+        "set_mesh_material_color",
+        "set_node_property",
+        "set_physics_properties",
+        "set_pin_value",
+        "set_static_mesh_properties",
+        "spawn_physics_blueprint_actor"
+      ]
+    }
   }
 }
