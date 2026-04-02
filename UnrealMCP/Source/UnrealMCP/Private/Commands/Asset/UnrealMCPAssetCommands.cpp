@@ -11,6 +11,7 @@
 #include "Misc/PackageName.h"
 #include "UObject/Package.h"
 #include "UObject/SavePackage.h"
+#include "AssetImportTask.h"
 
 FUnrealMCPAssetCommands::FUnrealMCPAssetCommands()
 {
@@ -61,6 +62,14 @@ TSharedPtr<FJsonObject> FUnrealMCPAssetCommands::HandleCommand(const FString& Co
 	else if (CommandType == TEXT("save_all"))
 	{
 		return HandleSaveAll(Params);
+	}
+	else if (CommandType == TEXT("import_assets"))
+	{
+		return HandleImportAssets(Params);
+	}
+	else if (CommandType == TEXT("export_assets"))
+	{
+		return HandleExportAssets(Params);
 	}
 
 	return MakeErrorResponse(FString::Printf(TEXT("Unknown asset command: %s"), *CommandType));
@@ -447,5 +456,147 @@ TSharedPtr<FJsonObject> FUnrealMCPAssetCommands::HandleSaveAll(const TSharedPtr<
 	Result->SetBoolField(TEXT("success"), bSuccess);
 	Result->SetNumberField(TEXT("saved_count"), SavedAssets.Num());
 	Result->SetArrayField(TEXT("saved_assets"), SavedArray);
+	return Result;
+}
+
+// ---------------------------------------------------------------------------
+// HandleImportAssets
+// ---------------------------------------------------------------------------
+TSharedPtr<FJsonObject> FUnrealMCPAssetCommands::HandleImportAssets(const TSharedPtr<FJsonObject>& Params)
+{
+	const TArray<TSharedPtr<FJsonValue>>* FilesArray;
+	if (!Params->TryGetArrayField(TEXT("files"), FilesArray))
+	{
+		return MakeErrorResponse(TEXT("Missing required parameter: files (array of file paths)"));
+	}
+
+	FString DestPath = TEXT("/Game");
+	if (Params->HasField(TEXT("destination_path")))
+	{
+		DestPath = Params->GetStringField(TEXT("destination_path"));
+	}
+
+	bool bReplace = false;
+	if (Params->HasField(TEXT("replace_existing")))
+	{
+		bReplace = Params->GetBoolField(TEXT("replace_existing"));
+	}
+
+	TArray<UAssetImportTask*> ImportTasks;
+	for (const auto& FileVal : *FilesArray)
+	{
+		UAssetImportTask* Task = NewObject<UAssetImportTask>();
+		Task->Filename = FileVal->AsString();
+		Task->DestinationPath = DestPath;
+		Task->bAutomated = true;
+		Task->bReplaceExisting = bReplace;
+		Task->bSave = true;
+		ImportTasks.Add(Task);
+	}
+
+	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+	AssetTools.ImportAssetTasks(ImportTasks);
+
+	// Collect results
+	TArray<TSharedPtr<FJsonValue>> ImportedArray;
+	TArray<TSharedPtr<FJsonValue>> FailedArray;
+
+	for (UAssetImportTask* Task : ImportTasks)
+	{
+		if (Task->GetObjects().Num() > 0)
+		{
+			for (UObject* ImportedObj : Task->GetObjects())
+			{
+				TSharedPtr<FJsonObject> Obj = MakeShared<FJsonObject>();
+				Obj->SetStringField(TEXT("source_file"), Task->Filename);
+				Obj->SetStringField(TEXT("asset_path"), ImportedObj->GetPathName());
+				Obj->SetStringField(TEXT("class"), ImportedObj->GetClass()->GetName());
+				ImportedArray.Add(MakeShared<FJsonValueObject>(Obj));
+			}
+		}
+		else
+		{
+			FailedArray.Add(MakeShared<FJsonValueString>(Task->Filename));
+		}
+	}
+
+	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+	Result->SetBoolField(TEXT("success"), FailedArray.Num() == 0);
+	Result->SetNumberField(TEXT("imported_count"), ImportedArray.Num());
+	Result->SetArrayField(TEXT("imported"), ImportedArray);
+
+	if (FailedArray.Num() > 0)
+	{
+		Result->SetArrayField(TEXT("failed"), FailedArray);
+	}
+
+	return Result;
+}
+
+// ---------------------------------------------------------------------------
+// HandleExportAssets
+// ---------------------------------------------------------------------------
+TSharedPtr<FJsonObject> FUnrealMCPAssetCommands::HandleExportAssets(const TSharedPtr<FJsonObject>& Params)
+{
+	const TArray<TSharedPtr<FJsonValue>>* AssetPathsArray;
+	if (!Params->TryGetArrayField(TEXT("asset_paths"), AssetPathsArray))
+	{
+		return MakeErrorResponse(TEXT("Missing required parameter: asset_paths (array of asset paths)"));
+	}
+
+	FString OutputDir;
+	if (!Params->TryGetStringField(TEXT("output_dir"), OutputDir))
+	{
+		return MakeErrorResponse(TEXT("Missing required parameter: output_dir"));
+	}
+
+	TArray<UObject*> AssetsToExport;
+	TArray<FString> NotFoundPaths;
+
+	for (const auto& PathVal : *AssetPathsArray)
+	{
+		FString AssetPath = PathVal->AsString();
+		UObject* Asset = LoadObject<UObject>(nullptr, *AssetPath);
+		if (Asset)
+		{
+			AssetsToExport.Add(Asset);
+		}
+		else
+		{
+			NotFoundPaths.Add(AssetPath);
+		}
+	}
+
+	if (AssetsToExport.Num() == 0)
+	{
+		return MakeErrorResponse(TEXT("No valid assets found to export"));
+	}
+
+	IAssetTools& AssetTools = FModuleManager::LoadModuleChecked<FAssetToolsModule>("AssetTools").Get();
+	TArray<FString> ExportedFiles;
+	AssetTools.ExportAssets(AssetsToExport, OutputDir);
+
+	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+	Result->SetBoolField(TEXT("success"), true);
+	Result->SetNumberField(TEXT("exported_count"), AssetsToExport.Num());
+	Result->SetStringField(TEXT("output_dir"), OutputDir);
+
+	TArray<TSharedPtr<FJsonValue>> ExportedArr;
+	for (UObject* Asset : AssetsToExport)
+	{
+		ExportedArr.Add(MakeShared<FJsonValueString>(Asset->GetPathName()));
+	}
+	Result->SetArrayField(TEXT("exported_assets"), ExportedArr);
+
+	if (NotFoundPaths.Num() > 0)
+	{
+		TArray<TSharedPtr<FJsonValue>> NotFoundArr;
+		for (const FString& Path : NotFoundPaths)
+		{
+			NotFoundArr.Add(MakeShared<FJsonValueString>(Path));
+		}
+		Result->SetArrayField(TEXT("not_found"), NotFoundArr);
+	}
+
 	return Result;
 }

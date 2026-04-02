@@ -25,4 +25,8 @@ private:
 	TSharedPtr<FJsonObject> HandleDoesAssetExist(const TSharedPtr<FJsonObject>& Params);
 	TSharedPtr<FJsonObject> HandleSaveAsset(const TSharedPtr<FJsonObject>& Params);
 	TSharedPtr<FJsonObject> HandleSaveAll(const TSharedPtr<FJsonObject>& Params);
+
+	// Import/Export
+	TSharedPtr<FJsonObject> HandleImportAssets(const TSharedPtr<FJsonObject>& Params);
+	TSharedPtr<FJsonObject> HandleExportAssets(const TSharedPtr<FJsonObject>& Params);
 };

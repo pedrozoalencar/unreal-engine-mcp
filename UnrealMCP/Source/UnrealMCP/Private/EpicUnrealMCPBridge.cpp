@@ -61,6 +61,10 @@
 #include "Commands/Level/UnrealMCPLevelCommands.h"
 #include "Commands/Asset/UnrealMCPAssetCommands.h"
 #include "Commands/Introspection/UnrealMCPIntrospectionCommands.h"
+#include "Commands/Transaction/UnrealMCPTransactionCommands.h"
+#include "Commands/Playtest/UnrealMCPPlaytestCommands.h"
+#include "Misc/FileHelper.h"
+#include "Misc/Paths.h"
 
 // Default settings
 #define MCP_SERVER_HOST "127.0.0.1"
@@ -77,6 +81,8 @@ UEpicUnrealMCPBridge::UEpicUnrealMCPBridge()
     LevelCommands = MakeShared<FUnrealMCPLevelCommands>();
     AssetCommands = MakeShared<FUnrealMCPAssetCommands>();
     IntrospectionCommands = MakeShared<FUnrealMCPIntrospectionCommands>();
+    TransactionCommands = MakeShared<FUnrealMCPTransactionCommands>();
+    PlaytestCommands = MakeShared<FUnrealMCPPlaytestCommands>();
 }
 
 UEpicUnrealMCPBridge::~UEpicUnrealMCPBridge()
@@ -90,6 +96,8 @@ UEpicUnrealMCPBridge::~UEpicUnrealMCPBridge()
     LevelCommands.Reset();
     AssetCommands.Reset();
     IntrospectionCommands.Reset();
+    TransactionCommands.Reset();
+    PlaytestCommands.Reset();
 }
 
 // Initialize subsystem
@@ -345,6 +353,49 @@ TSharedPtr<FJsonObject> UEpicUnrealMCPBridge::RouteCommand(const FString& Comman
         else if (CommandType.StartsWith(TEXT("inspect_")))
         {
             ResultJson = IntrospectionCommands->HandleCommand(CommandType, Params);
+        }
+        // Transaction Commands (all tx_* prefixed)
+        else if (CommandType.StartsWith(TEXT("tx_")))
+        {
+            FString SubCommand = CommandType.RightChop(3); // Remove "tx_"
+            ResultJson = TransactionCommands->HandleCommand(SubCommand, Params);
+        }
+        // Playtest Commands (all play_* prefixed)
+        else if (CommandType.StartsWith(TEXT("play_")))
+        {
+            FString SubCommand = CommandType.RightChop(5); // Remove "play_"
+            ResultJson = PlaytestCommands->HandleCommand(SubCommand, Params);
+        }
+        // Console Log - read the project log file tail
+        else if (CommandType == TEXT("read_console_log"))
+        {
+            int32 Limit = Params->HasField(TEXT("limit")) ? (int32)Params->GetNumberField(TEXT("limit")) : 50;
+            FString Level = Params->HasField(TEXT("level")) ? Params->GetStringField(TEXT("level")) : TEXT("all");
+
+            FString MCPLogFilePath = FPaths::ProjectLogDir() / FApp::GetProjectName() + TEXT(".log");
+            FString LogContent;
+            FFileHelper::LoadFileToString(LogContent, *MCPLogFilePath);
+
+            TArray<FString> Lines;
+            LogContent.ParseIntoArrayLines(Lines);
+
+            int32 Start = FMath::Max(0, Lines.Num() - Limit);
+            TArray<TSharedPtr<FJsonValue>> LogEntries;
+            for (int32 i = Start; i < Lines.Num(); i++)
+            {
+                if (Level != TEXT("all"))
+                {
+                    if (Level == TEXT("error") && !Lines[i].Contains(TEXT("Error"))) continue;
+                    if (Level == TEXT("warning") && !Lines[i].Contains(TEXT("Warning"))) continue;
+                }
+                LogEntries.Add(MakeShareable(new FJsonValueString(Lines[i])));
+            }
+
+            ResultJson = MakeShareable(new FJsonObject);
+            ResultJson->SetBoolField(TEXT("success"), true);
+            ResultJson->SetArrayField(TEXT("entries"), LogEntries);
+            ResultJson->SetNumberField(TEXT("count"), LogEntries.Num());
+            ResultJson->SetStringField(TEXT("log_path"), MCPLogFilePath);
         }
         else
         {

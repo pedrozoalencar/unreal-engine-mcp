@@ -32,4 +32,8 @@ private:
 	// Level management
 	TSharedPtr<FJsonObject> HandleGetLevelInfo(const TSharedPtr<FJsonObject>& Params);
 	TSharedPtr<FJsonObject> HandleSaveCurrentLevel(const TSharedPtr<FJsonObject>& Params);
+
+	// Selection
+	TSharedPtr<FJsonObject> HandleGetSelection(const TSharedPtr<FJsonObject>& Params);
+	TSharedPtr<FJsonObject> HandleSetSelection(const TSharedPtr<FJsonObject>& Params);
 };

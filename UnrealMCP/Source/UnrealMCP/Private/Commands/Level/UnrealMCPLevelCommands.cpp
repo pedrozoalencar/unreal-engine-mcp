@@ -18,6 +18,7 @@
 #include "FileHelpers.h"
 #include "UObject/PropertyIterator.h"
 #include "EditorViewportClient.h"
+#include "Engine/Selection.h"
 
 FUnrealMCPLevelCommands::FUnrealMCPLevelCommands()
 {
@@ -68,6 +69,14 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleCommand(const FString& Co
 	else if (CommandType == TEXT("save_current_level"))
 	{
 		return HandleSaveCurrentLevel(Params);
+	}
+	else if (CommandType == TEXT("get_selection"))
+	{
+		return HandleGetSelection(Params);
+	}
+	else if (CommandType == TEXT("set_selection"))
+	{
+		return HandleSetSelection(Params);
 	}
 
 	return MakeErrorResponse(FString::Printf(TEXT("Unknown level command: %s"), *CommandType));
@@ -855,6 +864,118 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleSaveCurrentLevel(const TS
 	else
 	{
 		Result->SetStringField(TEXT("error"), TEXT("Save operation returned false. The level may have no filename or save was cancelled."));
+	}
+
+	return Result;
+}
+
+// ---------------------------------------------------------------------------
+// HandleGetSelection
+// ---------------------------------------------------------------------------
+TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleGetSelection(const TSharedPtr<FJsonObject>& Params)
+{
+	if (!GEditor)
+	{
+		return MakeErrorResponse(TEXT("GEditor is not available"));
+	}
+
+	USelection* Selection = GEditor->GetSelectedActors();
+	if (!Selection)
+	{
+		return MakeErrorResponse(TEXT("Could not get selection object"));
+	}
+
+	TArray<TSharedPtr<FJsonValue>> ActorArray;
+	for (FSelectionIterator It(*Selection); It; ++It)
+	{
+		AActor* Actor = Cast<AActor>(*It);
+		if (!Actor) continue;
+
+		TSharedPtr<FJsonObject> ActorObj = MakeShared<FJsonObject>();
+		ActorObj->SetStringField(TEXT("name"), Actor->GetName());
+		ActorObj->SetStringField(TEXT("label"), Actor->GetActorNameOrLabel());
+		ActorObj->SetStringField(TEXT("class"), Actor->GetClass()->GetName());
+
+		FVector Loc = Actor->GetActorLocation();
+		TArray<TSharedPtr<FJsonValue>> LocArr;
+		LocArr.Add(MakeShared<FJsonValueNumber>(Loc.X));
+		LocArr.Add(MakeShared<FJsonValueNumber>(Loc.Y));
+		LocArr.Add(MakeShared<FJsonValueNumber>(Loc.Z));
+		ActorObj->SetArrayField(TEXT("location"), LocArr);
+
+		ActorArray.Add(MakeShared<FJsonValueObject>(ActorObj));
+	}
+
+	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+	Result->SetBoolField(TEXT("success"), true);
+	Result->SetNumberField(TEXT("count"), ActorArray.Num());
+	Result->SetArrayField(TEXT("selected_actors"), ActorArray);
+	return Result;
+}
+
+// ---------------------------------------------------------------------------
+// HandleSetSelection
+// ---------------------------------------------------------------------------
+TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleSetSelection(const TSharedPtr<FJsonObject>& Params)
+{
+	if (!GEditor)
+	{
+		return MakeErrorResponse(TEXT("GEditor is not available"));
+	}
+
+	const TArray<TSharedPtr<FJsonValue>>* ActorNamesArray;
+	if (!Params->TryGetArrayField(TEXT("actor_names"), ActorNamesArray))
+	{
+		return MakeErrorResponse(TEXT("Missing 'actor_names' array parameter"));
+	}
+
+	UWorld* World = GEditor->GetEditorWorldContext().World();
+	if (!World)
+	{
+		return MakeErrorResponse(TEXT("No editor world available"));
+	}
+
+	// Clear current selection
+	GEditor->SelectNone(true, true);
+
+	TArray<FString> SelectedNames;
+	TArray<FString> NotFoundNames;
+
+	for (const auto& NameVal : *ActorNamesArray)
+	{
+		FString ActorName = NameVal->AsString();
+		AActor* FoundActor = FindActorByName(ActorName);
+
+		if (FoundActor)
+		{
+			GEditor->SelectActor(FoundActor, /*bInSelected=*/ true, /*bNotify=*/ true);
+			SelectedNames.Add(FoundActor->GetName());
+		}
+		else
+		{
+			NotFoundNames.Add(ActorName);
+		}
+	}
+
+	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
+	Result->SetBoolField(TEXT("success"), true);
+	Result->SetNumberField(TEXT("selected_count"), SelectedNames.Num());
+
+	TArray<TSharedPtr<FJsonValue>> SelectedArr;
+	for (const FString& Name : SelectedNames)
+	{
+		SelectedArr.Add(MakeShared<FJsonValueString>(Name));
+	}
+	Result->SetArrayField(TEXT("selected"), SelectedArr);
+
+	if (NotFoundNames.Num() > 0)
+	{
+		TArray<TSharedPtr<FJsonValue>> NotFoundArr;
+		for (const FString& Name : NotFoundNames)
+		{
+			NotFoundArr.Add(MakeShared<FJsonValueString>(Name));
+		}
+		Result->SetArrayField(TEXT("not_found"), NotFoundArr);
 	}
 
 	return Result;

@@ -6,7 +6,7 @@ from typing import Any, Dict, Optional
 from helpers.ue2.response import UEResponse, cmd, extract_data
 
 TOOL = "ue_session"
-ACTIONS = ["ping", "get_context", "run_python"]
+ACTIONS = ["ping", "get_context", "run_python", "begin_transaction", "end_transaction", "undo", "redo"]
 
 
 def register_session_tools(mcp, get_connection):
@@ -99,6 +99,25 @@ print(json.dumps(context))
                 result = cmd(conn, "execute_python", {"code": code})
                 data = extract_data(result)
                 return UEResponse.ok(data, tool=TOOL, duration_ms=(time.time() - t0) * 1000)
+
+            # ------------------------------------------------------------------
+            elif action == "begin_transaction":
+                label = code if code else "MCP Transaction"
+                result = cmd(conn, "tx_begin_transaction", {"label": label})
+                return UEResponse.ok(extract_data(result), tool=TOOL, duration_ms=(time.time() - t0) * 1000)
+
+            elif action == "end_transaction":
+                commit = True  # default commit
+                result = cmd(conn, "tx_end_transaction", {"commit": commit})
+                return UEResponse.ok(extract_data(result), tool=TOOL, duration_ms=(time.time() - t0) * 1000)
+
+            elif action == "undo":
+                result = cmd(conn, "tx_undo", {})
+                return UEResponse.ok(extract_data(result), tool=TOOL, duration_ms=(time.time() - t0) * 1000)
+
+            elif action == "redo":
+                result = cmd(conn, "tx_redo", {})
+                return UEResponse.ok(extract_data(result), tool=TOOL, duration_ms=(time.time() - t0) * 1000)
 
             # ------------------------------------------------------------------
             else:

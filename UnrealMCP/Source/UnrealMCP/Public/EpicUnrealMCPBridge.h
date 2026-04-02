@@ -17,6 +17,8 @@
 #include "Commands/Level/UnrealMCPLevelCommands.h"
 #include "Commands/Asset/UnrealMCPAssetCommands.h"
 #include "Commands/Introspection/UnrealMCPIntrospectionCommands.h"
+#include "Commands/Transaction/UnrealMCPTransactionCommands.h"
+#include "Commands/Playtest/UnrealMCPPlaytestCommands.h"
 #include "EpicUnrealMCPBridge.generated.h"
 
 class FMCPServerRunnable;
@@ -72,4 +74,6 @@ private:
 	TSharedPtr<FUnrealMCPLevelCommands> LevelCommands;
 	TSharedPtr<FUnrealMCPAssetCommands> AssetCommands;
 	TSharedPtr<FUnrealMCPIntrospectionCommands> IntrospectionCommands;
-}; 
+	TSharedPtr<FUnrealMCPTransactionCommands> TransactionCommands;
+	TSharedPtr<FUnrealMCPPlaytestCommands> PlaytestCommands;
+};

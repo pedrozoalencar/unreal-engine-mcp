@@ -21,7 +21,9 @@ public class UnrealMCP : ModuleRules
 				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Material"),
 				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Level"),
 				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Asset"),
-				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Introspection")
+				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Introspection"),
+				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Transaction"),
+				System.IO.Path.Combine(ModuleDirectory, "Public/Commands/Playtest")
 			}
 		);
 
@@ -36,7 +38,9 @@ public class UnrealMCP : ModuleRules
 				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Material"),
 				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Level"),
 				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Asset"),
-				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Introspection")
+				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Introspection"),
+				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Transaction"),
+				System.IO.Path.Combine(ModuleDirectory, "Private/Commands/Playtest")
 			}
 		);
 		
