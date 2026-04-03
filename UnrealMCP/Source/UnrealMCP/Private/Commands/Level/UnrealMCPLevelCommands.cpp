@@ -641,6 +641,13 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleGetViewportScreenshot(con
 		return MakeErrorResponse(TEXT("Viewport has invalid dimensions or empty bitmap"));
 	}
 
+	// Fix alpha channel: viewport framebuffer doesn't write alpha,
+	// so all pixels have A=0 which makes the PNG appear transparent/empty
+	for (FColor& Pixel : Bitmap)
+	{
+		Pixel.A = 255;
+	}
+
 	// Compress to PNG
 	TArray64<uint8> PngData;
 	FImageUtils::PNGCompressImageArray(Width, Height, Bitmap, PngData);
