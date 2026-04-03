@@ -19,6 +19,7 @@
 #include "UObject/PropertyIterator.h"
 #include "EditorViewportClient.h"
 #include "Engine/Selection.h"
+#include "RenderingThread.h"
 
 FUnrealMCPLevelCommands::FUnrealMCPLevelCommands()
 {
@@ -595,24 +596,37 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleGetViewportScreenshot(con
 		return MakeErrorResponse(TEXT("Missing 'file_path' parameter"));
 	}
 
-	// Find the active level viewport
-	FViewport* Viewport = nullptr;
-
-	if (GEditor && GEditor->GetActiveViewport())
+	// Find the level editing viewport — prefer GCurrentLevelEditingViewportClient
+	// because GEditor->GetActiveViewport() only works when the viewport has focus,
+	// which fails when the editor is in background or another window is focused.
+	FLevelEditorViewportClient* ViewportClient = GCurrentLevelEditingViewportClient;
+	if (!ViewportClient)
 	{
-		Viewport = GEditor->GetActiveViewport();
-	}
-	else if (GCurrentLevelEditingViewportClient)
-	{
-		Viewport = GCurrentLevelEditingViewportClient->Viewport;
+		// Fallback: iterate all level viewports
+		for (FLevelEditorViewportClient* VC : GEditor->GetLevelViewportClients())
+		{
+			if (VC && VC->Viewport)
+			{
+				ViewportClient = VC;
+				break;
+			}
+		}
 	}
 
-	if (!Viewport)
+	if (!ViewportClient || !ViewportClient->Viewport)
 	{
-		return MakeErrorResponse(TEXT("No active editor viewport found"));
+		return MakeErrorResponse(TEXT("No level editor viewport found"));
 	}
 
-	// Read pixels from the viewport
+	FViewport* Viewport = ViewportClient->Viewport;
+
+	// Force the viewport to redraw so we capture the current frame,
+	// not a stale framebuffer (critical after set_camera or when editor is in background)
+	ViewportClient->Invalidate();
+	Viewport->Draw();
+	FlushRenderingCommands();
+
+	// Read pixels from the freshly-rendered viewport
 	TArray<FColor> Bitmap;
 	if (!Viewport->ReadPixels(Bitmap))
 	{
@@ -636,7 +650,7 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleGetViewportScreenshot(con
 		return MakeErrorResponse(TEXT("Failed to compress screenshot to PNG"));
 	}
 
-	// Write to file - convert TArray64 to TArray for SaveArrayToFile
+	// Write to file
 	TArray<uint8> PngDataSmall;
 	PngDataSmall.Append(PngData.GetData(), static_cast<int32>(PngData.Num()));
 	if (!FFileHelper::SaveArrayToFile(PngDataSmall, *FilePath))
@@ -709,7 +723,14 @@ TSharedPtr<FJsonObject> FUnrealMCPLevelCommands::HandleSetViewportCamera(const T
 		return MakeErrorResponse(TEXT("Must provide 'location' and/or 'rotation' as [x,y,z] arrays"));
 	}
 
+	// Force viewport to render with new camera position immediately,
+	// so a subsequent screenshot captures the updated view
 	ViewportClient->Invalidate();
+	if (ViewportClient->Viewport)
+	{
+		ViewportClient->Viewport->Draw();
+		FlushRenderingCommands();
+	}
 
 	TSharedPtr<FJsonObject> Result = MakeShared<FJsonObject>();
 	Result->SetBoolField(TEXT("success"), true);

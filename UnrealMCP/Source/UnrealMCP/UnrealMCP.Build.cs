@@ -66,7 +66,8 @@ public class UnrealMCP : ModuleRules
 				"GeometryCore",           // FDynamicMesh3, geometric types
 				"GeometryFramework",      // UDynamicMesh
 				"DynamicMesh",            // Dynamic mesh infrastructure
-				"ModelingComponents"      // UDynamicMeshComponent
+				"ModelingComponents",     // UDynamicMeshComponent
+				"RenderCore"              // FlushRenderingCommands for viewport capture
 			}
 		);
 
